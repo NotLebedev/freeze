@@ -38,29 +38,34 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1701053011,
-        "narHash": "sha256-8QQ7rFbKFqgKgLoaXVJRh7Ik5LtI3pyBBCfOnNOGkF0=",
-        "rev": "5b528f99f73c4fad127118a8c1126b5e003b01a9",
-        "revCount": 492345,
-        "type": "tarball",
-        "url": "https://api.flakehub.com/f/pinned/NixOS/nixpkgs/0.2305.492345%2Brev-5b528f99f73c4fad127118a8c1126b5e003b01a9/018c142e-e7b1-7b7f-a84d-1ed461fce320/source.tar.gz"
+        "lastModified": 1701253981,
+        "narHash": "sha256-ztaDIyZ7HrTAfEEUt9AtTDNoCYxUdSd6NrRHaYOIxtk=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e92039b55bcd58469325ded85d4f58dd5a4eaf58",
+        "type": "github"
       },
       "original": {
-        "type": "tarball",
-        "url": "https://flakehub.com/f/NixOS/nixpkgs/0.2305.%2A.tar.gz"
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
       }
     },
     "nixpkgs_2": {
       "locked": {
-        "narHash": "sha256-PEQptwFCVaJ+jLFJgrZll2shQ9VI/7xVhrCYkJo8iIw=",
-        "rev": "4f77ea639305f1de0a14d9d41eef83313360638c",
-        "revCount": 490691,
-        "type": "tarball",
-        "url": "https://api.flakehub.com/f/pinned/NixOS/nixpkgs/0.2305.490691%2Brev-4f77ea639305f1de0a14d9d41eef83313360638c/018a70b5-07f4-7ca0-99a2-f4a0ec0a6e07/source.tar.gz"
+        "lastModified": 1701253981,
+        "narHash": "sha256-ztaDIyZ7HrTAfEEUt9AtTDNoCYxUdSd6NrRHaYOIxtk=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e92039b55bcd58469325ded85d4f58dd5a4eaf58",
+        "type": "github"
       },
       "original": {
-        "type": "tarball",
-        "url": "https://flakehub.com/f/NixOS/nixpkgs/0.2305.%2A.tar.gz"
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
       }
     },
     "nuenv": {
@@ -69,15 +74,16 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1699545956,
-        "narHash": "sha256-LcMOwfcWRbzSFpkiX2HSYDvAIY4WrB4SHzHDHzNpgls=",
-        "owner": "DeterminateSystems",
+        "lastModified": 1701459521,
+        "narHash": "sha256-RvDfKS5ZaEEZ1YlHTYf3381lT4M5sn0UjzjNK6uQ61M=",
+        "owner": "NotLebedev",
         "repo": "nuenv",
-        "rev": "949781e828e9eaa879d29083149b3cea3dcc3fb5",
+        "rev": "0a12b5d62f7bbd5f32d649ee2c48a656633f113b",
         "type": "github"
       },
       "original": {
-        "owner": "DeterminateSystems",
+        "owner": "NotLebedev",
+        "ref": "nu-87",
         "repo": "nuenv",
         "type": "github"
       }

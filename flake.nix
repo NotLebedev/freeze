@@ -1,8 +1,8 @@
 {
   description = "A very basic flake";
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2305.*.tar.gz";
-    nuenv.url = "github:DeterminateSystems/nuenv";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nuenv.url = "github:NotLebedev/nuenv/nu-87";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -21,7 +21,7 @@
           , src
           , mainScript
           , system
-          , packages
+          , packages ? []
           , ...
           }: pkgs.nuenv.mkDerivation {
             inherit name;
@@ -38,16 +38,16 @@
               let out = $env.out
               mkdir $out
 
-              let source = (open --raw $env.mainScript)
+              let source = open --raw $env.mainScript
 
               let main_head_regex = 'def\s+(?:--env\s+)?main\s+\[[^]]*\][^{]*{'
               let add_set_env = "$0\n__set_env"
-              let patched_with_call = ($source | str replace -a $main_head_regex $add_set_env)
+              let patched_with_call = $source | str replace -a -r $main_head_regex $add_set_env
 
-              let add_path = '${pkgs.lib.makeBinPath packages}'
+              let add_path = '${pkgs.lib.makeBinPath packages}' | split row :
               let set_env_func = ('def --env __set_env [] { ' + 
                 $" $env.PATH = \($env.PATH | append ($add_path | to nuon)\) }\n")
-              let main_script_patched = ([$patched_with_call $set_env_func] | str join)
+              let main_script_patched = [$patched_with_call $set_env_func] | str join
               
               cp -r $'($env.copy)' $'($out)/bin'
               rm $'($out)/bin/($env.mainScriptName)'
@@ -67,7 +67,7 @@
           version = "0.0.1";
           src = ./.;
           inherit system;
-          packages = with pkgs; [ cowsay ];
+          packages = with pkgs; [ cowsay ddate ripgrep ];
           mainScript = ./test.nu;
         };
       }

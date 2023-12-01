@@ -2,10 +2,12 @@
 export def main [] {
   print $env.PATH
   print Here!
-  qweqwe
+  print-avail
   cowsay Hello!
 }
 
-def qweqwe [] {
+def print-avail [] {
   print (which cowsay)
+  print (which ddate)
+  print (which rg)
 }
