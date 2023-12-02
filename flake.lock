@@ -74,11 +74,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1701459521,
-        "narHash": "sha256-RvDfKS5ZaEEZ1YlHTYf3381lT4M5sn0UjzjNK6uQ61M=",
+        "lastModified": 1701513985,
+        "narHash": "sha256-KziXo3oZUg66J7LUgjUEyo6iDPZQitCWXRg1YQ2nwOA=",
         "owner": "NotLebedev",
         "repo": "nuenv",
-        "rev": "0a12b5d62f7bbd5f32d649ee2c48a656633f113b",
+        "rev": "7ded9b6421038f97b3fd9d039281220c15311c67",
         "type": "github"
       },
       "original": {
@@ -104,11 +104,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1694139063,
-        "narHash": "sha256-M2dhhe6IzHmS0zQkmnzbcG98jEQGZ4UcS3VcT+rG/Do=",
+        "lastModified": 1701397143,
+        "narHash": "sha256-nYUJxZXwCWWVBYZXPgRxGDuQcZRhKTtD/Jp5Jl+9EWU=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "46dbbcaf435b0d22b149684589b9b059f73f4ffc",
+        "rev": "bb71557c93cad40f5921b2342d7fd69f9e6497ab",
         "type": "github"
       },
       "original": {

@@ -19,7 +19,6 @@
           { name
           , version
           , src
-          , mainScript
           , system
           , packages ? []
           , ...
@@ -29,17 +28,13 @@
             inherit src;
             inherit system;
             inherit packages;
-            inherit mainScript;
 
-            mainScriptName = builtins.baseNameOf mainScript;
             copy = src;
             build = ''
               #!/usr/bin/env nu
               let out = $env.out
               let lib_target = $'($out)/lib/nushell'
               mkdir $'($out)/lib'
-
-              let source = open --raw $env.mainScript
 
               # def --env is not allowed, because it will polute outer
               # environment with path of package
@@ -49,7 +44,6 @@
               # Match either `def main [...] {` or any `export def ... [...] {` 
               let patch_head_regex = $"\(?:($main_head_regex)\)|\(?:($extern_head_regex)\)"
               let add_set_env = "$0\n__set_env"
-              let patched_with_call = $source | str replace -a -r $patch_head_regex $add_set_env
 
               let add_path = '${pkgs.lib.makeBinPath packages}' | split row :
 
@@ -64,11 +58,17 @@
                   $env.PATH = \($env.PATH | append $path\)
                 }
               }"
-              let main_script_patched = [$patched_with_call $set_env_func] | str join
+              log $'Additional $env.PATH = [ ($add_path | str join " ") ]'
               
               cp -r $env.copy $lib_target
-              rm $'($lib_target)/($env.mainScriptName)'
-              $main_script_patched | save $'($lib_target)/($env.mainScriptName)'
+              for $f in (glob $'($lib_target)/**/*.nu') {
+                log $'Patching ($f)'
+                let source = open --raw $f
+                let patched_with_call = $source | str replace -a -r $patch_head_regex $add_set_env
+                let script_patched = [$patched_with_call $set_env_func] | str join
+                rm $f
+                $script_patched | save -f $f
+              }
             '';
           };
       };
@@ -85,7 +85,6 @@
           src = ./.;
           inherit system;
           packages = with pkgs; [ cowsay ddate ripgrep ];
-          mainScript = ./test.nu;
         };
       }
     );
