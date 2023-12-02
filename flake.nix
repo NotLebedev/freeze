@@ -1,5 +1,5 @@
 {
-  description = "A very basic flake";
+  description = "";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nuenv.url = "github:NotLebedev/nuenv/nu-87";
@@ -36,7 +36,8 @@
             build = ''
               #!/usr/bin/env nu
               let out = $env.out
-              mkdir $out
+              let lib_target = $'($out)/lib/nushell'
+              mkdir $'($out)/lib'
 
               let source = open --raw $env.mainScript
 
@@ -65,9 +66,9 @@
               }"
               let main_script_patched = [$patched_with_call $set_env_func] | str join
               
-              cp -r $'($env.copy)' $'($out)/bin'
-              rm $'($out)/bin/($env.mainScriptName)'
-              $main_script_patched | save -f $'($out)/bin/($env.mainScriptName)'
+              cp -r $env.copy $lib_target
+              rm $'($lib_target)/($env.mainScriptName)'
+              $main_script_patched | save $'($lib_target)/($env.mainScriptName)'
             '';
           };
       };
