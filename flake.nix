@@ -105,6 +105,24 @@
       rec {
         defaultPackage = packages.script;
         packages = {
+          # Create a nushell wrapper with no user configuration
+          # and specified packages in $env.NU_LIB_DIRS
+          nushell.withPackages = packages:
+            let
+              joined = pkgs.lib.makeSearchPath "lib/nushell" packages;
+              # Replacement is not a whitespace. It is actually a \x1e character
+              # aka "record separator"
+              replaced = builtins.replaceStrings [ ":" ] [ "" ] joined;
+            in
+            pkgs.writeShellScriptBin "nu" ''
+              ${pkgs.nushell}/bin/nu -n -I "${replaced}" $@
+            '';
+
+          withTestPackages = self.packages.${system}.nushell.withPackages [
+            self.packages.${system}.script
+            self.packages.${system}.dependency
+          ];
+
           script = self.lib.buildNuPackage {
             name = "test";
             version = "0.0.1";
