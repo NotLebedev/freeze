@@ -6,7 +6,7 @@ export def main [] {
   cowsay Hello!
 }
 
-def print-avail [] {
+export def print-avail [] {
   print (which cowsay)
   print (which ddate)
   print (which rg)

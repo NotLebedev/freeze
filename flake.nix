@@ -40,13 +40,29 @@
 
               let source = open --raw $env.mainScript
 
-              let main_head_regex = 'def\s+(?:--env\s+)?main\s+\[[^]]*\][^{]*{'
+              # def --env is not allowed, because it will polute outer
+              # environment with path of package
+              let main_head_regex = 'def\s+?main\s+\[[^]]*\][^{]*{'
+              let extern_head_regex = 'export\s+def\s+\S+\s+\[[^]]*\][^{]*{'
+
+              # Match either `def main [...] {` or any `export def ... [...] {` 
+              let patch_head_regex = $"\(?:($main_head_regex)\)|\(?:($extern_head_regex)\)"
               let add_set_env = "$0\n__set_env"
-              let patched_with_call = $source | str replace -a -r $main_head_regex $add_set_env
+              let patched_with_call = $source | str replace -a -r $patch_head_regex $add_set_env
 
               let add_path = '${pkgs.lib.makeBinPath packages}' | split row :
-              let set_env_func = ('def --env __set_env [] { ' + 
-                $" $env.PATH = \($env.PATH | append ($add_path | to nuon)\) }\n")
+
+              # __set_env function checks if env was set for current package
+              # by checking if PATH ends with dependencies of this package
+              # This prevents $add_path added multiple times if exported commands
+              # call each other. There may still be a problem if command from
+              # one package calls command from another and then back
+              let set_env_func = $"def --env __set_env [] { 
+                let path = ($add_path | to nuon)
+                if \($env.PATH | last \($path | length\)\) != $path {
+                  $env.PATH = \($env.PATH | append $path\)
+                }
+              }"
               let main_script_patched = [$patched_with_call $set_env_func] | str join
               
               cp -r $'($env.copy)' $'($out)/bin'
