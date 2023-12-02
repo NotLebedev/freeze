@@ -20,7 +20,7 @@
           , version
           , src
           , system
-          , packages ? []
+          , packages ? [ ]
           , ...
           }: pkgs.nuenv.mkDerivation {
             inherit name;
@@ -30,11 +30,12 @@
             inherit packages;
 
             copy = src;
+            package_name = name;
             build = ''
               #!/usr/bin/env nu
               let out = $env.out
-              let lib_target = $'($out)/lib/nushell'
-              mkdir $'($out)/lib'
+              let lib_target = $'($out)/lib/nushell/($env.package_name)'
+              mkdir $'($out)/lib/nushell'
 
               # def --env is not allowed, because it will polute outer
               # environment with path of package
@@ -45,7 +46,9 @@
               let patch_head_regex = $"\(?:($main_head_regex)\)|\(?:($extern_head_regex)\)"
               let add_set_env = "$0\n__set_env"
 
-              let add_path = '${pkgs.lib.makeBinPath packages}' | split row :
+              let add_path = '${pkgs.lib.makeBinPath packages}'
+                | split row :
+                | filter { path exists }
 
               # __set_env function checks if env was set for current package
               # by checking if PATH ends with dependencies of this package
@@ -61,13 +64,35 @@
               log $'Additional $env.PATH = [ ($add_path | str join " ") ]'
               
               cp -r $env.copy $lib_target
-              for $f in (glob $'($lib_target)/**/*.nu') {
+              let all_scripts = glob $'($lib_target)/**/*.nu'
+              for $f in $all_scripts {
                 log $'Patching ($f)'
                 let source = open --raw $f
                 let patched_with_call = $source | str replace -a -r $patch_head_regex $add_set_env
                 let script_patched = [$patched_with_call $set_env_func] | str join
                 rm $f
                 $script_patched | save -f $f
+              }
+
+              let nushell_packages = '${pkgs.lib.makeSearchPath "lib/nushell" packages}'
+                | split row :
+                | filter { path exists }
+                | filter { (ls $in | length) > 0 }
+
+              log $'Nushell scripts forund in dependencies [ ($nushell_packages | str join " ") ]'
+
+              # Find dirs with .nu scripts to add symlinks to nushell script dependencies
+              let dirs_with_scripts = $all_scripts | path dirname | uniq
+              for $package in $nushell_packages {
+                # Each nushell dir may contain more then one package, theoretically
+                # Futureproofing, kinda
+                let imports = ls $package | get name
+                for $import in $imports {
+                  let link_name = $import | path basename
+                  for $d in $dirs_with_scripts {
+                    ${pkgs.coreutils-full}/bin/ln -s $import $'($d)/($link_name)' 
+                  }
+                }
               }
             '';
           };
@@ -79,12 +104,29 @@
       in
       rec {
         defaultPackage = packages.script;
-        packages.script = self.lib.buildNuPackage {
-          name = "test";
-          version = "0.0.1";
-          src = ./.;
-          inherit system;
-          packages = with pkgs; [ cowsay ddate ripgrep ];
+        packages = {
+          script = self.lib.buildNuPackage {
+            name = "test";
+            version = "0.0.1";
+            src = ./examples/script;
+            inherit system;
+            packages = with pkgs; [
+              cowsay
+              ddate
+              ripgrep
+              self.packages.${system}.dependency
+            ];
+          };
+
+          dependency = self.lib.buildNuPackage {
+            name = "dependency";
+            version = "0.0.1";
+            src = ./examples/dep;
+            inherit system;
+            packages = with pkgs; [
+              lolcat
+            ];
+          };
         };
       }
     );
