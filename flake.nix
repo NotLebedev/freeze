@@ -118,6 +118,23 @@
               ${pkgs.nushell}/bin/nu -n -I "${replaced}" $@
             '';
 
+          # Turn nushell script into a binary. Wraps given script, located in package, 
+          # as "bin/<binName>"
+          #
+          # package: a package containing "lib/nushell" (made by buildNuPackage)
+          # scriptName: identificator of script to run in format "<package>/<file name>".
+          #     Note that <file name> must be appended even if it is mod.nu, this is a limitation
+          #     on part of nushell, while it searches through -I arguments it does not expand
+          #     search for mod.nu for directories like `use` does
+          # binName: name of the resulting binary in "bin/" of derivation
+          nushell.wrapScript = { package, script, binName }:
+            let
+              nuPackaged = self.packages.${system}.nushell.withPackages [package];
+            in
+            pkgs.writeShellScriptBin binName ''
+              ${nuPackaged}/bin/nu ${script} $@
+            '';
+
           withTestPackages = self.packages.${system}.nushell.withPackages [
             self.packages.${system}.script
             self.packages.${system}.dependency
@@ -144,6 +161,17 @@
             packages = with pkgs; [
               lolcat
             ];
+          };
+
+          helloWrapped = self.packages.${system}.nushell.wrapScript {
+            package = self.lib.buildNuPackage {
+              name = "dependency";
+              version = "0.0.1";
+              src = ./examples/wrapScript;
+              inherit system;
+            };
+            script = "wrapScript/mod.nu";
+            binName = "hello";
           };
         };
       }
