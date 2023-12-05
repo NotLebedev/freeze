@@ -96,8 +96,37 @@
               }
             '';
           };
-      };
 
+        # Create a nushell wrapper with no user configuration
+        # and specified packages in $env.NU_LIB_DIRS
+        withPackages = packages:
+          let
+            joined = pkgs.lib.makeSearchPath "lib/nushell" packages;
+            # Replacement is not a whitespace. It is actually a \x1e character
+            # aka "record separator"
+            replaced = builtins.replaceStrings [ ":" ] [ "" ] joined;
+          in
+          pkgs.writeShellScriptBin "nu" ''
+            ${pkgs.nushell}/bin/nu -n -I "${replaced}" $@
+          '';
+
+        # Turn nushell script into a binary. Wraps given script, located in package, 
+        # as "bin/<binName>"
+        #
+        # package: a package containing "lib/nushell" (made by buildNuPackage)
+        # scriptName: identificator of script to run in format "<package>/<file name>".
+        #     Note that <file name> must be appended even if it is mod.nu, this is a limitation
+        #     on part of nushell, while it searches through -I arguments it does not expand
+        #     search for mod.nu for directories like `use` does
+        # binName: name of the resulting binary in "bin/" of derivation
+        wrapScript = { package, script, binName }:
+          let
+            scriptFullPath = package + "/lib/nushell/${script}";
+          in
+          pkgs.writeShellScriptBin binName ''
+            ${pkgs.nushell}/bin/nu ${scriptFullPath} $@
+          '';
+      };
     } // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -105,37 +134,7 @@
       rec {
         defaultPackage = packages.script;
         packages = {
-          # Create a nushell wrapper with no user configuration
-          # and specified packages in $env.NU_LIB_DIRS
-          nushell.withPackages = packages:
-            let
-              joined = pkgs.lib.makeSearchPath "lib/nushell" packages;
-              # Replacement is not a whitespace. It is actually a \x1e character
-              # aka "record separator"
-              replaced = builtins.replaceStrings [ ":" ] [ "" ] joined;
-            in
-            pkgs.writeShellScriptBin "nu" ''
-              ${pkgs.nushell}/bin/nu -n -I "${replaced}" $@
-            '';
-
-          # Turn nushell script into a binary. Wraps given script, located in package, 
-          # as "bin/<binName>"
-          #
-          # package: a package containing "lib/nushell" (made by buildNuPackage)
-          # scriptName: identificator of script to run in format "<package>/<file name>".
-          #     Note that <file name> must be appended even if it is mod.nu, this is a limitation
-          #     on part of nushell, while it searches through -I arguments it does not expand
-          #     search for mod.nu for directories like `use` does
-          # binName: name of the resulting binary in "bin/" of derivation
-          nushell.wrapScript = { package, script, binName }:
-            let
-              nuPackaged = self.packages.${system}.nushell.withPackages [package];
-            in
-            pkgs.writeShellScriptBin binName ''
-              ${nuPackaged}/bin/nu ${script} $@
-            '';
-
-          withTestPackages = self.packages.${system}.nushell.withPackages [
+          withTestPackages = self.lib.withPackages [
             self.packages.${system}.script
             self.packages.${system}.dependency
           ];
@@ -163,7 +162,7 @@
             ];
           };
 
-          helloWrapped = self.packages.${system}.nushell.wrapScript {
+          helloWrapped = self.lib.wrapScript {
             package = self.lib.buildNuPackage {
               name = "dependency";
               version = "0.0.1";
@@ -172,6 +171,12 @@
             };
             script = "wrapScript/mod.nu";
             binName = "hello";
+          };
+
+          emoji-picker = import ./examples/emoji-picker {
+            lib = self.lib;
+            pkgs = pkgs;
+            inherit system;
           };
         };
       }
