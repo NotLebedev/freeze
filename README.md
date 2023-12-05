@@ -1,3 +1,18 @@
+# 🥶 Freeze
+Turn your [nushell](https://www.nushell.sh/) scripts into [nix](https://nixos.org/) packages
+
+## Warning
+This project is really not complete. But feel free to try it out. Pin your inputs and nix will
+cover you. But take care when updating, things might (and will) be changing and breaking.
+
+## Using freeze
+Freeze is a flake providing an overlay with a few functions to create packages, executables
+and (soon) dev environments based on nushell:
+* `buildNuPackage` - package nushell scripts. Automatically manages binary dependencies and
+dependencies on other nushell scripts.
+* `withPackages` - create a nushell wrapper with specified packages available to `use`
+* `wrapScript` - turn a nushell script into an executable
+
 ## Design considerations
 Here are some thoughts that I had while creaating this project.
 
