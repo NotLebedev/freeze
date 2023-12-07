@@ -1,7 +1,7 @@
-{ lib, pkgs, system, ... }:
+pkgs:
 
-lib.wrapScript {
-  package = lib.buildNuPackage {
+pkgs.freeze.wrapScript {
+  package = pkgs.freeze.buildPackage {
     name = "emoji-picker";
     version = "0.0.1";
     src = ./.;
@@ -9,7 +9,6 @@ lib.wrapScript {
       wofi
       wtype
     ];
-    inherit system;
   };
   script = "emoji-picker/mod.nu";
   binName = "emoji-picker";

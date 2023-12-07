@@ -7,26 +7,42 @@
   };
 
   outputs = { self, nixpkgs, nuenv, flake-utils }:
-    let
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
-        overlays = [ nuenv.overlays.nuenv ];
-      };
-    in
     {
+      overlays = rec {
+        default = freeze;
+
+        freeze = final: prev: {
+          freeze = {
+            buildPackage = self.lib.buildNuPackage prev.system prev;
+
+            # Create a nushell wrapper with no user configuration
+            # and specified packages in $env.NU_LIB_DIRS
+            withPackages = self.lib.withPackages prev.system prev;
+
+            # Turn nushell script into a binary. Wraps given script, located in package, 
+            # as "bin/<binName>"
+            #
+            # package: a package containing "lib/nushell" (made by buildNuPackage)
+            # scriptName: identificator of script to run in format "<package>/<file name>".
+            #     Note that <file name> must be appended even if it is mod.nu, this is a limitation
+            #     on part of nushell, while it searches through -I arguments it does not expand
+            #     search for mod.nu for directories like `use` does
+            # binName: name of the resulting binary in "bin/" of derivation
+            wrapScript = self.lib.wrapScript prev.system prev;
+          };
+        };
+      };
       lib = {
         buildNuPackage =
+          system:
+          pkgs:
           { name
-          , version
           , src
-          , system
           , packages ? [ ]
           , ...
           }: pkgs.nuenv.mkDerivation {
             inherit name;
-            inherit version;
             inherit src;
-            inherit system;
             inherit packages;
 
             copy = src;
@@ -90,16 +106,14 @@
                 for $import in $imports {
                   let link_name = $import | path basename
                   for $d in $dirs_with_scripts {
-                    ${pkgs.coreutils-full}/bin/ln -s $import $'($d)/($link_name)' 
+                    ${pkgs.coreutils}/bin/ln -s $import $'($d)/($link_name)' 
                   }
                 }
               }
             '';
           };
 
-        # Create a nushell wrapper with no user configuration
-        # and specified packages in $env.NU_LIB_DIRS
-        withPackages = packages:
+        withPackages = system: pkgs: packages:
           let
             joined = pkgs.lib.makeSearchPath "lib/nushell" packages;
             # Replacement is not a whitespace. It is actually a \x1e character
@@ -110,16 +124,7 @@
             ${pkgs.nushell}/bin/nu -n -I "${replaced}" $@
           '';
 
-        # Turn nushell script into a binary. Wraps given script, located in package, 
-        # as "bin/<binName>"
-        #
-        # package: a package containing "lib/nushell" (made by buildNuPackage)
-        # scriptName: identificator of script to run in format "<package>/<file name>".
-        #     Note that <file name> must be appended even if it is mod.nu, this is a limitation
-        #     on part of nushell, while it searches through -I arguments it does not expand
-        #     search for mod.nu for directories like `use` does
-        # binName: name of the resulting binary in "bin/" of derivation
-        wrapScript = { package, script, binName }:
+        wrapScript = system: pkgs: { package, script, binName }:
           let
             scriptFullPath = package + "/lib/nushell/${script}";
           in
@@ -129,21 +134,25 @@
       };
     } // flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [
+            nuenv.overlays.nuenv
+            self.overlays.freeze
+          ];
+        };
       in
       rec {
         defaultPackage = packages.script;
         packages = {
-          withTestPackages = self.lib.withPackages [
+          withTestPackages = pkgs.freeze.withPackages [
             self.packages.${system}.script
             self.packages.${system}.dependency
           ];
 
-          script = self.lib.buildNuPackage {
+          script = pkgs.freeze.buildPackage {
             name = "test";
-            version = "0.0.1";
             src = ./examples/script;
-            inherit system;
             packages = with pkgs; [
               cowsay
               ddate
@@ -152,32 +161,24 @@
             ];
           };
 
-          dependency = self.lib.buildNuPackage {
+          dependency = pkgs.freeze.buildPackage {
             name = "dependency";
-            version = "0.0.1";
             src = ./examples/dep;
-            inherit system;
             packages = with pkgs; [
               lolcat
             ];
           };
 
-          helloWrapped = self.lib.wrapScript {
-            package = self.lib.buildNuPackage {
-              name = "dependency";
-              version = "0.0.1";
+          helloWrapped = pkgs.freeze.wrapScript {
+            package = pkgs.freeze.buildPackage {
+              name = "wrapScript";
               src = ./examples/wrapScript;
-              inherit system;
             };
             script = "wrapScript/mod.nu";
             binName = "hello";
           };
 
-          emoji-picker = import ./examples/emoji-picker {
-            lib = self.lib;
-            pkgs = pkgs;
-            inherit system;
-          };
+          emoji-picker = import ./examples/emoji-picker pkgs;
         };
       }
     );
