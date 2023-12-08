@@ -11,26 +11,31 @@
       overlays = rec {
         default = freeze;
 
-        freeze = final: prev: {
-          freeze = {
-            buildPackage = self.lib.buildNuPackage prev.system prev;
+        freeze = final: prev:
+          let
+            pkgs = prev.extend nuenv.overlays.default;
+          in
+          {
+            freeze =
+              {
+                buildPackage = self.lib.buildNuPackage pkgs.system pkgs;
 
-            # Create a nushell wrapper with no user configuration
-            # and specified packages in $env.NU_LIB_DIRS
-            withPackages = self.lib.withPackages prev.system prev;
+                # Create a nushell wrapper with no user configuration
+                # and specified packages in $env.NU_LIB_DIRS
+                withPackages = self.lib.withPackages pkgs.system pkgs;
 
-            # Turn nushell script into a binary. Wraps given script, located in package, 
-            # as "bin/<binName>"
-            #
-            # package: a package containing "lib/nushell" (made by buildNuPackage)
-            # scriptName: identificator of script to run in format "<package>/<file name>".
-            #     Note that <file name> must be appended even if it is mod.nu, this is a limitation
-            #     on part of nushell, while it searches through -I arguments it does not expand
-            #     search for mod.nu for directories like `use` does
-            # binName: name of the resulting binary in "bin/" of derivation
-            wrapScript = self.lib.wrapScript prev.system prev;
+                # Turn nushell script into a binary. Wraps given script, located in package, 
+                # as "bin/<binName>"
+                #
+                # package: a package containing "lib/nushell" (made by buildNuPackage)
+                # scriptName: identificator of script to run in format "<package>/<file name>".
+                #     Note that <file name> must be appended even if it is mod.nu, this is a limitation
+                #     on part of nushell, while it searches through -I arguments it does not expand
+                #     search for mod.nu for directories like `use` does
+                # binName: name of the resulting binary in "bin/" of derivation
+                wrapScript = self.lib.wrapScript pkgs.system pkgs;
+              };
           };
-        };
       };
       lib = {
         buildNuPackage =
@@ -139,7 +144,6 @@
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            nuenv.overlays.nuenv
             self.overlays.freeze
           ];
         };
