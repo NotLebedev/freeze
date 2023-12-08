@@ -106,7 +106,9 @@
                 for $import in $imports {
                   let link_name = $import | path basename
                   for $d in $dirs_with_scripts {
-                    ${pkgs.coreutils}/bin/ln -s $import $'($d)/($link_name)' 
+                    # Uutils are currently intergrated into nushell so ixpect this to
+                    # be easier to replace later
+                    ${pkgs.uutils-coreutils}/bin/ln -s $import $'($d)/($link_name)' 
                   }
                 }
               }
