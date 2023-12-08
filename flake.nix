@@ -16,7 +16,7 @@
             pkgs = prev.extend nuenv.overlays.default;
           in
           {
-            freeze =
+            nushell-freeze =
               {
                 buildPackage = self.lib.buildNuPackage pkgs.system pkgs;
 
@@ -151,12 +151,12 @@
       rec {
         defaultPackage = packages.script;
         packages = {
-          withTestPackages = pkgs.freeze.withPackages [
+          withTestPackages = pkgs.nushell-freeze.withPackages [
             self.packages.${system}.script
             self.packages.${system}.dependency
           ];
 
-          script = pkgs.freeze.buildPackage {
+          script = pkgs.nushell-freeze.buildPackage {
             name = "test";
             src = ./examples/script;
             packages = with pkgs; [
@@ -167,7 +167,7 @@
             ];
           };
 
-          dependency = pkgs.freeze.buildPackage {
+          dependency = pkgs.nushell-freeze.buildPackage {
             name = "dependency";
             src = ./examples/dep;
             packages = with pkgs; [
@@ -175,8 +175,8 @@
             ];
           };
 
-          helloWrapped = pkgs.freeze.wrapScript {
-            package = pkgs.freeze.buildPackage {
+          helloWrapped = pkgs.nushell-freeze.wrapScript {
+            package = pkgs.nushell-freeze.buildPackage {
               name = "wrapScript";
               src = ./examples/wrapScript;
             };

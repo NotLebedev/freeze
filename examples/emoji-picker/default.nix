@@ -1,7 +1,7 @@
 pkgs:
 
-pkgs.freeze.wrapScript {
-  package = pkgs.freeze.buildPackage {
+pkgs.nushell-freeze.wrapScript {
+  package = pkgs.nushell-freeze.buildPackage {
     name = "emoji-picker";
     version = "0.0.1";
     src = ./.;

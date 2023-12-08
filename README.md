@@ -27,7 +27,7 @@ alternatively if you need freeze one time, not for the entire flake, you can use
 pkgsWithFreeze = pkgs.extend freeze.overlays.default
 ```
 
-With overlay installed `pkgs.freeze` has this functions:
+With overlay installed `pkgs.nushell-freeze` has this functions:
 * `buildNuPackage` - package nushell scripts. Automatically manages binary dependencies and
 dependencies on other nushell scripts.
 * `withPackages` - create a nushell wrapper with specified packages available to `use`
