@@ -27,6 +27,15 @@ alternatively if you need freeze one time, not for the entire flake, you can use
 pkgsWithFreeze = pkgs.extend freeze.overlays.default
 ```
 
+In nixos configuration or [home manager](https://nix-community.github.io/home-manager/index.html)
+add overlay to `nixpkgs.overlays`:
+```nix
+nixpkgs.overlays = [ freeze.overlays.default ];
+```
+⚠️ Warning, if you are using combined configuration of nixos and home manager you must use option
+of nixos configuration, not home manager one. Otherwise nothing is added to `pkgs` for some
+reason.
+
 With overlay installed `pkgs.nushell-freeze` has this functions:
 * `buildNuPackage` - package nushell scripts. Automatically manages binary dependencies and
 dependencies on other nushell scripts.
