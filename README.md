@@ -7,7 +7,27 @@ cover you. But take care when updating, things might (and will) be changing and 
 
 ## Using freeze
 Freeze is a flake providing an overlay with a few functions to create packages, executables
-and (soon) dev environments based on nushell:
+and (soon) dev environments based on nushell. Install it by adding overlay to your pkgs
+like this:
+```nix
+inputs.freeze.url = "github:NotLebedev/freeze"; # Add to flake input
+
+...
+
+pkgs = import nixpkgs {
+  inherit system;
+  overlays = [
+    freeze.overlays.default # Add freeze to overlays when importing nixpkgs
+  ];
+};
+```
+
+alternatively if you need freeze one time, not for the entire flake, you can use
+```nix
+pkgsWithFreeze = pkgs.extend freeze.overlays.default
+```
+
+With overlay installed `pkgs.freeze` has this functions:
 * `buildNuPackage` - package nushell scripts. Automatically manages binary dependencies and
 dependencies on other nushell scripts.
 * `withPackages` - create a nushell wrapper with specified packages available to `use`
@@ -16,8 +36,17 @@ dependencies on other nushell scripts.
 ## Design considerations
 Here are some thoughts that I had while creaating this project.
 
+### Why use nuenv to build derivations?
+*Short*: It's cool and its nushell
+
+*Long*: I really don't like sh derivative shells. Before I discovered nushell I did not touch shell
+much and was really annoyed when I needed to. When I discovered nushell I fell in love with it
+and started using shell a lot. With some time I understood and became more familiar with sh/bash
+too. But ultimately I'm not torturing myself with bash on free time, I much rather toy with nushell.
+
 ### Whats the need for `__set_env`/export patching?
 *Short*: To allow multiple scripts reference multiple versions of the same binary
+
 *Long*: In nix installed packages dont get in path. This prevents clutter and allows multiple
 version to coexist. Instead everything must point to `/nix/store`. If script is written in nix
 one can call to binaries like `${pkgs.hello}/bin/hello` and nix automatically exapnds this
@@ -46,6 +75,7 @@ that will call back to some binary used by caller and it needs to be in path).
 ### Why is this not done for `use` of nushell scripts?
 *Short*: Nushell searches for binaries to run dynamically searching path. Howver all paths
 used in `use` need to be kwnown before parsing.
+
 *Long*: With binary commands if `$env.PATH` is modified at runtime nushell will find binary
 by searching through it at runtime. The same is not true about `$env.NU_LIB_DIRS` and `use`.
 When first use is called, entire chain of uses is evaluated at parse time, as described
@@ -57,6 +87,7 @@ can only be done at runtime. And so each package can not add additional entries 
 
 ### Well, what to do about this, really?
 *Short*: Use `symlinkJoin`-like approach, which we discarded earlier.
+
 *Long*: Here situation is different. If a binary, say `hello` is in directory near the script
 even calling it using `./hello` is less then ideal. But binaries are searched in this way relative
 to pwd, not location of script. Luckily `use` does not have any of this problems. If a `hello.nu`
