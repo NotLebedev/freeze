@@ -37,6 +37,25 @@
               };
           };
       };
+
+      homeManagerModule = { lib, config, ... }: {
+        options.programs.nushell.freeze-packages = with lib; mkOption {
+          type = with types; listOf package;
+          default = [];
+          description = mdDoc "List of freeze packages to add to $env.NU_LIB_DIRS";
+        }; 
+
+        config.programs.nushell.extraEnv = 
+        let
+        dirs = builtins.map (p: p + "/lib/nushell" ) config.programs.nushell.freeze-packages;
+        asNuStrings = builtins.map (p: "'" + p + "'") dirs;
+        packagesNuArray = "[ " + (builtins.concatStringsSep " " asNuStrings) + " ]";
+        in
+        ''
+          $env.NU_LIB_DIRS = ($env.NU_LIB_DIRS | append ${packagesNuArray})
+        '';
+      }; 
+
       lib = {
         buildNuPackage =
           system:
