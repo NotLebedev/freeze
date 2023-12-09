@@ -42,6 +42,31 @@ dependencies on other nushell scripts.
 * `withPackages` - create a nushell wrapper with specified packages available to `use`
 * `wrapScript` - turn a nushell script into an executable
 
+## Using home manger module
+This flakes also provides a home manager module to add freeze packages to nushell `env.nu` file. To
+use this module add it to `home-manager.sharedModules` in NixOS configuration or simply import it
+in home manager:
+
+```nix
+# Available in nixos configuration.nix file if home manager is installed as NixOS module
+sharedModules = [
+  freeze.homeManagerModule
+];
+
+# Simply import in home manager configuration
+imports = [
+  freeze.homeManagerModule
+];
+```
+
+now option `programs.nushell.freeze-packages` is available. All packages in the list will be added
+to `$env.NU_LIB_DIRS` in `env.nu` and available to use in shell:
+```nix
+programs.nushell.freeze-packages = [
+  freeze.packages.nu-git-manager
+];
+```
+
 ## Design considerations
 Here are some thoughts that I had while creaating this project.
 
