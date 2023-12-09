@@ -204,7 +204,7 @@
           };
 
           emoji-picker = import ./examples/emoji-picker pkgs;
-        };
+        } // (import ./packages { pkgs = pkgs; });
       }
     );
 }
