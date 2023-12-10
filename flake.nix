@@ -98,6 +98,7 @@
 
               let add_path = '${pkgs.lib.makeBinPath packages}'
                 | split row :
+                | filter {|it| ($it | str length) > 0}
                 | filter { path exists }
 
               # __set_env function checks if env was set for current package
@@ -121,17 +122,23 @@
               }
 
               let all_scripts = glob $'($lib_target)/**/*.nu'
-              for $f in $all_scripts {
-                log $'Patching ($f)'
-                let source = open --raw $f
-                let patched_with_call = $source | str replace -a -r $patch_head_regex $add_set_env
-                let script_patched = [$patched_with_call $set_env_func] | str join
-                rm $f
-                $script_patched | save -f $f
+
+              # Only add __set_env if there is something to add
+              if not ($add_path | is-empty) {
+                log $'"($add_path.0)"'
+                for $f in $all_scripts {
+                  log $'Patching ($f)'
+                  let source = open --raw $f
+                  let patched_with_call = $source | str replace -a -r $patch_head_regex $add_set_env
+                  let script_patched = [$patched_with_call $set_env_func] | str join
+                  rm $f
+                  $script_patched | save -f $f
+                }
               }
 
               let nushell_packages = '${pkgs.lib.makeSearchPath "lib/nushell" packages}'
                 | split row :
+                | filter {|it| ($it | str length) > 0}
                 | filter { path exists }
                 | filter { (ls $in | length) > 0 }
 
@@ -148,7 +155,7 @@
                   for $d in $dirs_with_scripts {
                     # Uutils are currently intergrated into nushell so ixpect this to
                     # be easier to replace later
-                    ${pkgs.uutils-coreutils}/bin/ln -s $import $'($d)/($link_name)' 
+                    ${pkgs.uutils-coreutils}/bin/uutils-ln -s $import $'($d)/($link_name)' 
                   }
                 }
               }
