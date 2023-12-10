@@ -34,7 +34,17 @@
                 #     search for mod.nu for directories like `use` does
                 # binName: name of the resulting binary in "bin/" of derivation
                 wrapScript = self.lib.wrapScript pkgs.system pkgs;
-              };
+              } // (prev.nushell-freeze or { });
+          };
+
+        packages = final: prev:
+          let
+            pkgs = prev.extend self.overlays.default;
+          in
+          {
+            nushell-freeze = {
+              packages = import ./packages { pkgs = pkgs; };
+            } // (prev.nushell-freeze or { });
           };
       };
 
