@@ -103,7 +103,13 @@
               }"
               log $'Additional $env.PATH = [ ($add_path | str join " ") ]'
               
-              cp -r $env.copy $lib_target
+              if ($env.copy | path type) == dir {
+                cp -r $env.copy $lib_target
+              } else {
+                mkdir $lib_target
+                cp $env.copy $lib_target
+              }
+
               let all_scripts = glob $'($lib_target)/**/*.nu'
               for $f in $all_scripts {
                 log $'Patching ($f)'
