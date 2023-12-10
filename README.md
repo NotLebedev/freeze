@@ -36,13 +36,38 @@ nixpkgs.overlays = [ freeze.overlays.default ];
 of nixos configuration, not home manager one. Otherwise nothing is added to `pkgs` for some
 reason.
 
+### Packaging functions
 With overlay installed `pkgs.nushell-freeze` has this functions:
 * `buildNuPackage` - package nushell scripts. Automatically manages binary dependencies and
 dependencies on other nushell scripts.
 * `withPackages` - create a nushell wrapper with specified packages available to `use`
 * `wrapScript` - turn a nushell script into an executable
 
-## Using home manger module
+### Packages overlay
+Additionally freeze provides overlay with some pre-packaged nushell scripts:
+```nix
+nixpkgs.overlays = [ freeze.overlays.packages ];
+```
+
+All provided packages are available under `nushell-freeze.packages`. See `packages` directory for 
+all available packages. Here are some examples:
+```nix
+# Entire https://github.com/nushell/nu_scripts as a package
+# Use git-completions script with `use nu_scripts/completions/git/git-completions.nu *`
+nushell-freeze.packages.nu_scripts 
+
+# One file from nu_scipts as its own package named git-completions
+# Use it in nushell with `use git-completions/git-completions.nu *`
+# Unlike nu_scripts package nothing else is added to `$env.NU_LIB_DIRS` when installing this
+# package
+nushell-freeze.packages.from_nu_scripts "git-completions" "custom-completions/git/git-completions.nu"
+
+# nu-git-manager part of https://github.com/amtoine/nu-git-manager
+# One can use it exactly as in nupm `use nu-git-manager *`
+nushell-freeze.packages.nu-git-manager
+```
+
+### Home manger module
 This flakes also provides a home manager module to add freeze packages to nushell `env.nu` file. To
 use this module add it to `home-manager.sharedModules` in NixOS configuration or simply import it
 in home manager:
@@ -65,6 +90,11 @@ to `$env.NU_LIB_DIRS` in `env.nu` and available to use in shell:
 programs.nushell.freeze-packages = [
   freeze.packages.nu-git-manager
 ];
+```
+Usable in shell like:
+```nu
+use nu-git-manager *
+gm --help
 ```
 
 ## Design considerations
