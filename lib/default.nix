@@ -17,6 +17,10 @@
       copy = src;
       package_name = name;
       packages_path = "[${builtins.toString (builtins.map (p: "`${p}`" ) packages)}]";
+
+      # Unfortunately nushell does not have ln command. For now use uutils one
+      # for (hopefully) better compat in future
+      ln = "${pkgs.uutils-coreutils}/bin/uutils-ln";
       build = ''
         #!/usr/bin/env nu
         let out = $env.out
@@ -92,7 +96,7 @@
             for $d in $dirs_with_scripts {
               # Uutils are currently intergrated into nushell so ixpect this to
               # be easier to replace later
-              ${pkgs.uutils-coreutils}/bin/uutils-ln -s $import $'($d)/($link_name)' 
+              ^$env.ln -s $import $'($d)/($link_name)' 
             }
           }
         }
