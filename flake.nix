@@ -2,7 +2,7 @@
   description = "";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nuenv.url = "github:NotLebedev/nuenv/nu-87";
+    nuenv.url = "github:DeterminateSystems/nuenv";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
