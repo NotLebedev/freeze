@@ -16,6 +16,7 @@
 
       copy = src;
       package_name = name;
+      packages_path = "[${builtins.toString (builtins.map (p: "`${p}`" ) packages)}]";
       build = ''
         #!/usr/bin/env nu
         let out = $env.out
@@ -31,10 +32,11 @@
         let patch_head_regex = $"\(?:($main_head_regex)\)|\(?:($extern_head_regex)\)"
         let add_set_env = "$0\n__set_env"
 
-        let add_path = '${pkgs.lib.makeBinPath packages}'
-          | split row :
+        let add_path = $env.packages_path | from nuon
           | filter {|it| ($it | str length) > 0}
+          | each { path join bin }
           | filter { path exists }
+          | filter { (ls $in | length) > 0 }
 
         # __set_env function checks if env was set for current package
         # by checking if PATH ends with dependencies of this package
@@ -71,9 +73,9 @@
           }
         }
 
-        let nushell_packages = '${pkgs.lib.makeSearchPath "lib/nushell" packages}'
-          | split row :
+        let nushell_packages = $env.packages_path | from nuon
           | filter {|it| ($it | str length) > 0}
+          | each { path join lib/nushell }
           | filter { path exists }
           | filter { (ls $in | length) > 0 }
 
