@@ -34,7 +34,7 @@ if ($env.copy | path type) == dir {
   cp -r $env.copy $lib_target
 } else {
   mkdir $lib_target
-  cp $env.copy $lib_target
+  cp $env.copy $'($lib_target)/mod.nu'
 }
 
 let all_scripts = glob $'($lib_target)/**/*.nu'

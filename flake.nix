@@ -22,8 +22,11 @@
               #
               # name: name of nushell package. Available to `use` commands under this name
               #     (e.g. for `name = "myPackage"` `use myPackage/myScipt *`)
-              # src: source file or directory to create package from. If directory is specified
-              #     its contents are copied to `lib/nushell/<name>/` directory 
+              # src: source file or directory to create package from.
+              #     If directory is specified its contents are copied to
+              #     `lib/nushell/<name>/` directory 
+              #     If a file is specified it is copied (and renamed) to
+              #     `lib/nushell/<name>/mod.nu`
               # packages: optinal list of packages used by this package. Binary packages (those
               #     with files in `bin/` directory) and other freeze packages are supported.
               #     other will be ignored 
