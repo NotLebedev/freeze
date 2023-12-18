@@ -60,13 +60,14 @@
           };
       };
 
-      homeManagerModule = (import ./lib {}).homeManagerModule;
+      homeManagerModule = (import ./lib { }).homeManagerModule;
     } // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
             self.overlays.freeze
+            nuenv.overlays.default
           ];
         };
       in
@@ -107,7 +108,7 @@
           };
 
           emoji-picker = import ./examples/emoji-picker pkgs;
-        } // (import ./packages { pkgs = pkgs; });
-      }
+        };
+      } // (import ./examples { inherit pkgs; })
     );
 }
