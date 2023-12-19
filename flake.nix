@@ -71,44 +71,8 @@
           ];
         };
       in
-      rec {
-        defaultPackage = packages.script;
-        packages = {
-          withTestPackages = pkgs.nushell-freeze.withPackages [
-            self.packages.${system}.script
-            self.packages.${system}.dependency
-          ];
-
-          script = pkgs.nushell-freeze.buildPackage {
-            name = "test";
-            src = ./examples/script;
-            packages = with pkgs; [
-              cowsay
-              ddate
-              ripgrep
-              self.packages.${system}.dependency
-            ];
-          };
-
-          dependency = pkgs.nushell-freeze.buildPackage {
-            name = "dependency";
-            src = ./examples/dep;
-            packages = with pkgs; [
-              lolcat
-            ];
-          };
-
-          helloWrapped = pkgs.nushell-freeze.wrapScript {
-            package = pkgs.nushell-freeze.buildPackage {
-              name = "wrapScript";
-              src = ./examples/wrapScript;
-            };
-            script = "wrapScript/mod.nu";
-            binName = "hello";
-          };
-
-          emoji-picker = import ./examples/emoji-picker pkgs;
-        };
-      } // (import ./examples { inherit pkgs; })
+      {
+        checks = import ./checks { inherit pkgs; };
+      }
     );
 }
