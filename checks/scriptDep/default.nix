@@ -24,7 +24,7 @@ let
   };
 in
 pkgs.nuenv.mkDerivation {
-  name = "checkScriptScriptDep";
+  name = "checkScriptDep";
   src = ./.;
 
   build = ''
