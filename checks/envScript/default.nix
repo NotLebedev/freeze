@@ -39,6 +39,13 @@ pkgs.nuenv.mkDerivation {
       assert equal $env.PATH [ ]
     }
 
+    do {
+      let old_path = $env.PATH
+      one-calls-another
+      # Check that PATH was not changed after running
+      assert equal $env.PATH $old_path
+    }
+
     mkdir $env.out
   '';
 }

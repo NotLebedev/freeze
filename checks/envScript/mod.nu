@@ -18,3 +18,13 @@ export def --env clear-path []: nothing -> nothing {
   check-jq-installed
   $env.PATH = []
 }
+
+export def --env another []: nothing -> nothing {
+  check-jq-installed
+}
+
+export def --env one-calls-another []: nothing -> nothing {
+  check-jq-installed
+  another
+  check-jq-installed
+}
