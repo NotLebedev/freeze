@@ -4,11 +4,10 @@ mkdir $'($out)/lib/nushell'
 
 let add_path = $env.symlinkjoin_path | path join bin
 
-# __set_env function checks if env was set for current package
-# by checking if PATH ends with dependencies of this package
-# This prevents $add_path added multiple times if exported commands
-# call each other. There may still be a problem if command from
-# one package calls command from another and then back
+# __set_env function injects binary dependencies into $env.PATH
+# using symlinkJoinPath (one entry)
+# __unset_env finds and removes this entry from path (there can
+# not be more then one such entry, because of check in __set_env)
 let set_env_func = $"
 
 def --env __set_env [] {
@@ -18,8 +17,14 @@ def --env __set_env [] {
     $env.PATH = [ $path ...$env.PATH ]
   }
   $inp
+}
+
+def --env __unset_env [] {
+  let inp = $in
+  $env.PATH = \($env.PATH | filter { $in != ($add_path | to nuon) }\)
+  $inp
 }"
-log $'Additional $env.PATH is ($add_path) '
+log $'Additional $env.PATH is [ ($add_path) ]'
       
 if ($env.copy | path type) == dir {
   cp -r $env.copy $lib_target
@@ -30,7 +35,7 @@ if ($env.copy | path type) == dir {
 
 let all_scripts = glob $'($lib_target)/**/*.nu'
 
-# Only add __set_env if there is something to add
+# Only patch commands if there are binaries in dependencies
 if ($add_path | path exists) {
   log $'"($add_path)"'
   for $f in $all_scripts {
@@ -99,17 +104,17 @@ def patch-file []: string -> string {
 
 def find-functions []: string -> table<from: int to: int> {
   let file = $in
-  $file | parse -r '(export\s+def\s+\S+\s+\[[^]]*\][^{]*{)'
+  $file | parse -r '(export\s+def\s+(?:--env\s+)?\S+\s+\[[^]]*\][^{]*{)'
     | get capture0 
     | each {|it| $file | str index-of $it | $in + ($it | str length) }
     | each {|it| $file | find-block-end $it | { from: $it to: $in } }
 }
 
 # Modify function body by wrapping existing code in do
-# block and adding __set_env call in pipe
+# block and adding __set_env __unset_env call in pipe
 # This way values are correctly piped into existing script
 def patch-function []: string -> string {
-  $"\n__set_env | do {($in)}\n"
+  $"\n__set_env | do --env {($in)} | __unset_env\n"
 }
 
 # Find end of current block
