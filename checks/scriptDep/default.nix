@@ -30,9 +30,12 @@ pkgs.nuenv.mkDerivation {
   build = ''
     #!/usr/bin/env nu
     use ${package}/lib/nushell/package
-
+    use assert
+    
     package
 
+    # Check that fiels are not modified without binary dependendcies
+    assert equal (open ${./package.nu}) (open ${package}/lib/nushell/package/mod.nu)
     mkdir $env.out
   '';
 }

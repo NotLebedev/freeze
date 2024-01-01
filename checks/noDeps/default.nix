@@ -22,6 +22,8 @@ pkgs.nuenv.mkDerivation {
 
   build = ''
     #!/usr/bin/env nu
+    use assert
+    
     do {
       # Just like any other derivation it can be embedded directly into
       # scripts specified in nushell expressions
@@ -40,6 +42,9 @@ pkgs.nuenv.mkDerivation {
       }
     }
 
+    # Check that fiels are not modified without binary dependendcies
+    assert equal (open ${./script.nu}) (open ${buildDir}/lib/nushell/noDeps/script.nu)
+    assert equal (open ${./script.nu}) (open ${buildFile}/lib/nushell/noDeps/mod.nu)
     mkdir $env.out
   '';
 }

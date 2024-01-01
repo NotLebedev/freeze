@@ -17,6 +17,10 @@
       copy = src;
       package_name = name;
       packages_path = "[${builtins.toString (builtins.map (p: "`${p}`" ) packages)}]";
+      symlinkjoin_path = pkgs.symlinkJoin {
+        name = "${name}-symlinkjoin";
+        paths = packages;
+      };
 
       # Unfortunately nushell does not have ln command. For now use uutils one
       # for (hopefully) better compat in future
