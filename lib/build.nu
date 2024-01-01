@@ -5,23 +5,28 @@ mkdir $'($out)/lib/nushell'
 let add_path = $env.symlinkjoin_path | path join bin
 
 # __set_env function injects binary dependencies into $env.PATH
-# using symlinkJoinPath (one entry)
-# __unset_env finds and removes this entry from path (there can
-# not be more then one such entry, because of check in __set_env)
+# using symlinkJoinPath
+# __unset_env finds and removes the first entry it meets
+# there may be more than one if commands call each other. Then
+# they should be popped one by one as a stack
 let set_env_func = $"
 
 def --env __set_env [] {
   let inp = $in
   let path = ($add_path | to nuon)
-  if not \($path in $env.PATH\) {
-    $env.PATH = [ $path ...$env.PATH ]
-  }
+  $env.PATH = [ $path ...$env.PATH ]
   $inp
 }
 
 def --env __unset_env [] {
   let inp = $in
-  $env.PATH = \($env.PATH | filter { $in != ($add_path | to nuon) }\)
+  let idx = $env.PATH | enumerate
+    | where item == ($add_path | to nuon)
+    | get index?.0?
+
+  if $idx != null {
+    $env.PATH = \($env.PATH | drop nth $idx\)
+  }
   $inp
 }"
 log $'Additional $env.PATH is [ ($add_path) ]'
@@ -53,7 +58,7 @@ let nushell_packages = $env.packages_path | from nuon
   | filter { path exists }
   | filter { (ls $in | length) > 0 }
 
-log $'Nushell scripts forund in dependencies [ ($nushell_packages | str join " ") ]'
+log $'Nushell scripts found in dependencies [ ($nushell_packages | str join " ") ]'
 
 # Find dirs with .nu scripts to add symlinks to nushell script dependencies
 let dirs_with_scripts = $all_scripts | path dirname | uniq
