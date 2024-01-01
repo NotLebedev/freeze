@@ -2,15 +2,6 @@ let out = $env.out
 let lib_target = $'($out)/lib/nushell/($env.package_name)'
 mkdir $'($out)/lib/nushell'
 
-# def --env is not allowed, because it will polute outer
-# environment with path of package
-let main_head_regex = 'def\s+?main\s+\[[^]]*\][^{]*{'
-let extern_head_regex = 'export\s+def\s+\S+\s+\[[^]]*\][^{]*{'
-
-# Match either `def main [...] {` or any `export def ... [...] {` 
-let patch_head_regex = $"\(?:($main_head_regex)\)|\(?:($extern_head_regex)\)"
-let add_set_env = "$0\n__set_env"
-
 let add_path = $env.packages_path | from nuon
   | filter {|it| ($it | str length) > 0}
   | each { path join bin }
@@ -22,11 +13,15 @@ let add_path = $env.packages_path | from nuon
 # This prevents $add_path added multiple times if exported commands
 # call each other. There may still be a problem if command from
 # one package calls command from another and then back
-let set_env_func = $"def --env __set_env [] { 
+let set_env_func = $"
+
+def --env __set_env [] {
+  let inp = $in
   let path = ($add_path | to nuon)
   if \($env.PATH | last \($path | length\)\) != $path {
     $env.PATH = \($env.PATH | append $path\)
   }
+  $inp
 }"
 log $'Additional $env.PATH = [ ($add_path | str join " ") ]'
       
@@ -45,8 +40,7 @@ if not ($add_path | is-empty) {
   for $f in $all_scripts {
     log $'Patching ($f)'
     let source = open --raw $f
-    let patched_with_call = $source | str replace -a -r $patch_head_regex $add_set_env
-    let script_patched = [$patched_with_call $set_env_func] | str join
+    let script_patched = $source | patch-file | [$in $set_env_func] | str join
     rm $f
     $script_patched | save -f $f
   }
@@ -74,4 +68,73 @@ for $package in $nushell_packages {
       ^$env.ln -s $import $'($d)/($link_name)' 
     }
   }
+}
+
+def patch-file []: string -> string {
+  let file = $in
+
+  let body_spans = $file | find-functions
+  let patched_bodies = $body_spans
+    | each {|it| $file | str substring $it.from..$it.to }
+    | each { patch-function }
+
+  # Invert spans
+  # e.g. [{1 2} {3 4}] into [{0 1} {2 3} {4 ($file | str length)}]
+  let rest_spans = $body_spans
+    | each {[$in.from $in.to] }
+    | flatten
+    | [0 ...$in ($file | str length)]
+  let rest_spans = $rest_spans | every 2
+    | zip ($rest_spans | skip 1 | every 2)
+    | each { { from: $in.0 to: $in.1 } }
+
+  # From inverted spans get text that did not make it
+  # into $patched_bodies
+  let rest_text = $rest_spans 
+    | each {|it| $file | str substring $it.from..$it.to }
+
+  # Interleave and join remaining text and patched bodies
+  $rest_text
+    | zip $patched_bodies
+    | flatten
+    | [...$in ($rest_text | last )]
+    | str join
+}
+
+def find-functions []: string -> table<from: int to: int> {
+  let file = $in
+  $file | parse -r '(export\s+def\s+\S+\s+\[[^]]*\][^{]*{)'
+    | get capture0 
+    | each {|it| $file | str index-of $it | $in + ($it | str length) }
+    | each {|it| $file | find-block-end $it | { from: $it to: $in } }
+}
+
+# Modify function body by wrapping existing code in do
+# block and adding __set_env call in pipe
+# This way values are correctly piped into existing script
+def patch-function []: string -> string {
+  $"\n__set_env | do {($in)}\n"
+}
+
+# Find end of current block
+#
+# Input: string with nu code
+# Output: index of '}' closing block
+def find-block-end [
+  start_idx: int # Index of '{' starting the block
+]: string -> int {
+  $in | split chars
+    | drop nth ..$start_idx
+    | reduce --fold { idx: $start_idx depth: 1 } {|it, acc|
+      if $acc.depth == 0 {
+        $acc
+      } else if $it == '{' {
+        { idx: ($acc.idx + 1) depth: ($acc.depth + 1) }
+      } else if $it == '}' {
+        { idx: ($acc.idx + 1) depth: ($acc.depth - 1) }
+      } else {
+        { idx: ($acc.idx + 1) depth: $acc.depth }
+      }
+    }
+    | get idx
 }
