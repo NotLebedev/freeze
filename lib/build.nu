@@ -2,11 +2,7 @@ let out = $env.out
 let lib_target = $'($out)/lib/nushell/($env.package_name)'
 mkdir $'($out)/lib/nushell'
 
-let add_path = $env.packages_path | from nuon
-  | filter {|it| ($it | str length) > 0}
-  | each { path join bin }
-  | filter { path exists }
-  | filter { (ls $in | length) > 0 }
+let add_path = $env.symlinkjoin_path | path join bin
 
 # __set_env function checks if env was set for current package
 # by checking if PATH ends with dependencies of this package
@@ -18,12 +14,12 @@ let set_env_func = $"
 def --env __set_env [] {
   let inp = $in
   let path = ($add_path | to nuon)
-  if \($env.PATH | last \($path | length\)\) != $path {
-    $env.PATH = \($env.PATH | append $path\)
+  if not \($path in $env.PATH\) {
+    $env.PATH = [ $path ...$env.PATH ]
   }
   $inp
 }"
-log $'Additional $env.PATH = [ ($add_path | str join " ") ]'
+log $'Additional $env.PATH is ($add_path) '
       
 if ($env.copy | path type) == dir {
   cp -r $env.copy $lib_target
@@ -35,8 +31,8 @@ if ($env.copy | path type) == dir {
 let all_scripts = glob $'($lib_target)/**/*.nu'
 
 # Only add __set_env if there is something to add
-if not ($add_path | is-empty) {
-  log $'"($add_path.0)"'
+if ($add_path | path exists) {
+  log $'"($add_path)"'
   for $f in $all_scripts {
     log $'Patching ($f)'
     let source = open --raw $f
