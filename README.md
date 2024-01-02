@@ -150,19 +150,6 @@ and `__set_env` adds one entry to `$env.PATH` and `__unset_env` removes it (by v
 in PATH to handle modifications of PATH by original command correctly). This solution allows
 seamless handling of all most cases.
 
-### Why is this not done for `use` of nushell scripts?
-*Short*: Nushell searches for binaries to run dynamically searching path. Howver all paths
-used in `use` need to be kwnown before parsing.
-
-*Long*: With binary commands if `$env.PATH` is modified at runtime nushell will find binary
-by searching through it at runtime. The same is not true about `$env.NU_LIB_DIRS` and `use`.
-When first use is called, entire chain of uses is evaluated at parse time, as described
-[here](https://www.nushell.sh/book/how_nushell_code_gets_run.html). The real implication here
-is that modifying `$env` wich is not a
-[constatnt](https://www.nushell.sh/book/variables_and_subexpressions.html#constant-variables)
-can only be done at runtime. And so each package can not add additional entries to
-`NU_LIB_DIRS` as it is evaluated to search among dependencies.
-
 ### What to do for `use` of other nushell scripts?
 *Short*: Add links to all dependencies into derivation, kinda like symlink join.
 
