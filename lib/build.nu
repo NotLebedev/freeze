@@ -109,7 +109,9 @@ def patch-file []: string -> string {
 
 def find-functions []: string -> table<from: int to: int> {
   let file = $in
-  $file | parse -r '(export\s+def\s+(?:--env\s+)?\S+\s+\[[^]]*\][^{]*{)'
+  # Parse matches 'export def <signature>{' any signature up until
+  # the opening curly bracket
+  $file | parse -r '(export\s+def[^{]+{)'
     | get capture0 
     | each {|it| $file | str index-of $it | $in + ($it | str length) }
     | each {|it| $file | find-block-end $it | { from: $it to: $in } }
