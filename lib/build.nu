@@ -54,27 +54,23 @@ if ($add_path | path exists) {
   }
 }
 
-let nushell_packages = $env.packages_path | from nuon
-  | filter {|it| ($it | str length) > 0}
-  | each { path join lib/nushell }
-  | filter { path exists }
-  | filter { (ls $in | length) > 0 }
+# Find all nushell script dependencies in lib/nushell inside
+# symlinkjoin derivation
+let nushell_packages = $env.symlinkjoin_path
+  | path join lib nushell
+  | if ($in | path exists) {
+      ls -a -f $in | get name
+    } else { [ ] }
 
 log $'Nushell scripts found in dependencies [ ($nushell_packages | str join " ") ]'
 
 # Find dirs with .nu scripts to add symlinks to nushell script dependencies
 let dirs_with_scripts = $all_scripts | path dirname | uniq
 for $package in $nushell_packages {
-  # Each nushell dir may contain more then one package, theoretically
-  # Futureproofing, kinda
-  let imports = ls $package | get name
-  for $import in $imports {
-    let link_name = $import | path basename
-    for $d in $dirs_with_scripts {
-      # Uutils are currently intergrated into nushell so ixpect this to
-      # be easier to replace later
-      ^$env.ln -s $import $'($d)/($link_name)' 
-    }
+  let link_name = $package | path basename
+  for $d in $dirs_with_scripts {
+    # TODO: replace this when ln is integrated into nushell
+    ^$env.ln -s $package $'($d)/($link_name)' 
   }
 }
 
