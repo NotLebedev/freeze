@@ -30,7 +30,9 @@ def --env __unset_env [] {
   $inp
 }"
 log $'Additional $env.PATH is [ ($add_path) ]'
-      
+
+# Copy all files from source as is if source is a directory
+# or copy rename to mod.nu if source is a file
 if ($env.copy | path type) == dir {
   cp -r $env.copy $lib_target
 } else {
@@ -133,15 +135,20 @@ def find-block-end [
 ]: string -> int {
   $in | split chars
     | drop nth ..$start_idx
+    # Count parity of curly brackets until all are closed (depth 0)
+    # Then just skip rest of input
     | reduce --fold { idx: $start_idx depth: 1 } {|it, acc|
       if $acc.depth == 0 {
         $acc
-      } else if $it == '{' {
-        { idx: ($acc.idx + 1) depth: ($acc.depth + 1) }
-      } else if $it == '}' {
-        { idx: ($acc.idx + 1) depth: ($acc.depth - 1) }
       } else {
-        { idx: ($acc.idx + 1) depth: $acc.depth }
+        { 
+          idx: ($acc.idx + 1)
+          depth: (match $it {
+            '{' => ($acc.depth + 1)
+            '}' => ($acc.depth - 1)
+            _ => $acc.depth
+          })
+        }
       }
     }
     | get idx
