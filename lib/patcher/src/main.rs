@@ -45,7 +45,6 @@ fn write_result(contents: &[u8], export_defs: &[ExportDef]) -> Result<(), io::Er
 }
 
 struct ExportDef {
-    name: String,
     body: Span,
     is_env: bool,
 }
@@ -83,17 +82,12 @@ impl<'a: 'b, 'b> Search<'a> {
                 },
             ) => {
                 if self.is_export_def(call.head) {
-                    const NAME_INDEX: usize = 0;
                     const BODY_INDEX: usize = 2;
                     const ENV_FLAG: &str = "env";
-                    let name = call
-                        .positional_nth(NAME_INDEX)
-                        .and_then(Expression::as_string)
-                        .unwrap_or_else(|| "".into());
 
                     let is_env = call.has_flag(ENV_FLAG);
                     let body = call.positional_nth(BODY_INDEX)?.span;
-                    Some(ExportDef { name, body, is_env })
+                    Some(ExportDef { body, is_env })
                 } else {
                     None
                 }
