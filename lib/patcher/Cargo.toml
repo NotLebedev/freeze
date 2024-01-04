@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+nu-cmd-lang = "0.88.1"
+nu-parser = "0.88.1"
+nu-protocol = "0.88.1"
