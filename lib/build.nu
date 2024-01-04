@@ -1,7 +1,3 @@
-let out = $env.out
-let lib_target = $'($out)/lib/nushell/($env.package_name)'
-mkdir $'($out)/lib/nushell'
-
 let add_path = $env.symlinkjoin_path | path join bin
 
 # __set_env command injects binary dependencies into $env.PATH
@@ -41,13 +37,13 @@ log $'Additional $env.PATH is [ ($add_path) ]'
 # Copy all files from source as is if source is a directory
 # or copy rename to mod.nu if source is a file
 if ($env.copy | path type) == dir {
-  cp -r $env.copy $lib_target
+  cp -r $env.copy build
 } else {
-  mkdir $lib_target
-  cp $env.copy $'($lib_target)/mod.nu'
+  mkdir build
+  cp $env.copy build/mod.nu
 }
 
-let all_scripts = glob $'($lib_target)/**/*.nu'
+let all_scripts = glob build/**/*.nu
 
 # Only patch commands if there are binaries in dependencies
 if ($add_path | path exists) {
@@ -80,3 +76,7 @@ for $package in $nushell_packages {
     ^$env.ln -s $package $'($d)/($link_name)' 
   }
 }
+
+let lib_target = $'($env.out)/lib/nushell/($env.package_name)'
+mkdir ($lib_target | path dirname)
+cp -r build $lib_target
