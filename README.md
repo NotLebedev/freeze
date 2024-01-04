@@ -1,14 +1,13 @@
 # 🥶 Freeze
-Turn your [nushell](https://www.nushell.sh/) scripts into [nix](https://nixos.org/) packages
+Turn your [nushell](https://www.nushell.sh/) scripts into [nix](https://nixos.org/) packages.
 
 ## Warning
 This project is really not complete. But feel free to try it out. Pin your inputs and nix will
 cover you. But take care when updating, things might (and will) be changing and breaking.
 
 ## Using freeze
-Freeze is a flake providing an overlay with a few functions to create packages, executables
-and (soon) dev environments based on nushell. Install it by adding overlay to your pkgs
-like this:
+Freeze is a flake providing an overlay with a few functions to create packages and executables.
+Install it by adding overlay to your pkgs like this:
 ```nix
 inputs.freeze.url = "github:NotLebedev/freeze"; # Add to flake input
 
@@ -40,8 +39,8 @@ reason.
 With overlay installed `pkgs.nushell-freeze` has this functions:
 * `buildNuPackage` - package nushell scripts. Automatically manages binary dependencies and
 dependencies on other nushell scripts.
-* `withPackages` - create a nushell wrapper with specified packages available to `use`
-* `wrapScript` - turn a nushell script into an executable
+* `withPackages` - create a nushell wrapper with specified packages available to `use`.
+* `wrapScript` - turn a nushell script into an executable.
 
 ### Packages overlay
 Additionally freeze provides overlay with some pre-packaged nushell scripts:
@@ -57,7 +56,7 @@ all available packages. Here are some examples:
 nushell-freeze.packages.nu_scripts 
 
 # One file from nu_scipts as its own package named git-completions
-# Use it in nushell with `use git-completions *`
+# Use it in nushell with `use git-completions *` (sole file is renamed to mod.nu for convinience)
 # Unlike nu_scripts package nothing else is added to `$env.NU_LIB_DIRS` when installing this
 # package
 nushell-freeze.packages.from_nu_scripts "git-completions" "custom-completions/git/git-completions.nu"
@@ -78,7 +77,7 @@ sharedModules = [
   freeze.homeManagerModule
 ];
 
-# Simply import in home manager configuration
+# Or import in home manager configuration
 imports = [
   freeze.homeManagerModule
 ];
@@ -98,7 +97,7 @@ gm --help
 ```
 
 ## Design considerations
-Here are some thoughts that I had while creaating this project.
+Here are some thoughts that I had while creating this project.
 
 ### Why use nuenv to build derivations?
 *Short*: It's cool and its nushell
@@ -115,7 +114,7 @@ too. But ultimately I'm not torturing myself with bash on free time, I much rath
 version to coexist. Instead everything must point to `/nix/store`. If script is written in nix
 one can call to binaries like `${pkgs.hello}/bin/hello` and nix will automatically expand this
 to path into store. However if one needs to package an existing script (and does not want
-to turn it into nix expression) this approach is unusable.
+to turn it into nix expression) this approach is unsuitable.
 
 Another way, that is more commonly used with existing scripts is
 [makeWrapper](https://github.com/NixOS/nixpkgs/blob/9a255aba3817d477e0959b53e9001d566bfb3595/pkgs/build-support/setup-hooks/make-wrapper.sh)
@@ -139,7 +138,7 @@ export def test [ ... ]: input -> output { # Signature remains untouched
 }
 ```
 
-A more clever approach is needed for `def --env`:
+It works fine with simple commands but a more clever approach is needed for `def --env`:
 
 ```nu
 export def --env test [ ... ]: input -> output {
@@ -166,8 +165,12 @@ and `__set_env` adds one entry to `$env.PATH` and `__unset_env` removes it (by v
 in PATH to handle modifications of PATH by original command correctly). This solution allows
 seamless handling of most cases.
 
+To perform these code modification a patcher written in rust based on nushell internal crates is
+used. It is easier to parse code this way and results of patching are always consistent with how
+nushell behaves. See [lib/patcher](lib/patcher) for code.
+
 ### What to do for `use` of other nushell scripts?
-*Short*: Add links to all dependencies into derivation, kinda like symlink join.
+*Short*: Add symlinks to all dependencies into derivation, kinda like symlink join.
 
 *Long*: In case of `$env.NU_LIB_DIRS` situation is different. Unlike `$env.PATH` it is not handled
 dynamically. Instead `use`s are evaluated during parsing of scripts as described 
@@ -195,12 +198,12 @@ with dependencies `foo` and `bar` will transform to:
 ```
 project/
   - mod.nu
-  - foo/ -> /nix/store/<hash>-foo-0.0.1/lib/nushell/foo
-  - bar/ -> /nix/store/<hash>-bar-0.0.1/lib/nushell/bar
+  - foo/ -> /nix/store/<hash>-foo/lib/nushell/foo
+  - bar/ -> /nix/store/<hash>-bar/lib/nushell/bar
   - subdir/
     - part.nu
-    - foo/ -> /nix/store/<hash>-foo-0.0.1/lib/nushell/foo
-    - bar/ -> /nix/store/<hash>-bar-0.0.1/lib/nushell/bar
+    - foo/ -> /nix/store/<hash>-foo/lib/nushell/foo
+    - bar/ -> /nix/store/<hash>-bar/lib/nushell/bar
 ```
 This is esseintially equivalent to putting `foo` and `bar` into `.config/nushell` which is part
 of `$env.NU_LIB_DIRS` by default. Or similar to how

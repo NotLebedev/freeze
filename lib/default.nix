@@ -1,10 +1,9 @@
 { ... }:
 
 {
-
   buildNuPackage =
-    system:
     pkgs:
+    patcher:
     { name
     , src
     , packages ? [ ]
@@ -24,10 +23,11 @@
       # Unfortunately nushell does not have ln command. For now use uutils one
       # for (hopefully) better compat in future
       ln = "${pkgs.uutils-coreutils}/bin/uutils-ln";
+      patcher = "${patcher}/bin/freeze-patcher";
       build = builtins.readFile ./build.nu;
     };
 
-  withPackages = system: pkgs: packages:
+  withPackages = pkgs: packages:
     let
       joined = pkgs.lib.makeSearchPath "lib/nushell" packages;
       # Replacement is not a whitespace. It is actually a \x1e character
@@ -38,7 +38,7 @@
       ${pkgs.nushell}/bin/nu -n -I "${replaced}" $@
     '';
 
-  wrapScript = system: pkgs: { package, script, binName }:
+  wrapScript = pkgs: { package, script, binName }:
     let
       scriptFullPath = package + "/lib/nushell/${script}";
     in

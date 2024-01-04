@@ -1,7 +1,3 @@
-let out = $env.out
-let lib_target = $'($out)/lib/nushell/($env.package_name)'
-mkdir $'($out)/lib/nushell'
-
 let add_path = $env.symlinkjoin_path | path join bin
 
 # __set_env command injects binary dependencies into $env.PATH
@@ -41,13 +37,13 @@ log $'Additional $env.PATH is [ ($add_path) ]'
 # Copy all files from source as is if source is a directory
 # or copy rename to mod.nu if source is a file
 if ($env.copy | path type) == dir {
-  cp -r $env.copy $lib_target
+  cp -r $env.copy build
 } else {
-  mkdir $lib_target
-  cp $env.copy $'($lib_target)/mod.nu'
+  mkdir build
+  cp $env.copy build/mod.nu
 }
 
-let all_scripts = glob $'($lib_target)/**/*.nu'
+let all_scripts = glob build/**/*.nu
 
 # Only patch commands if there are binaries in dependencies
 if ($add_path | path exists) {
@@ -55,7 +51,7 @@ if ($add_path | path exists) {
   for $f in $all_scripts {
     log $'Patching ($f)'
     let source = open --raw $f
-    let script_patched = $source | patch-file | [$in $set_env_commands] | str join
+    let script_patched = $source | ^$env.patcher | [$in $set_env_commands] | str join
     rm $f
     $script_patched | save -f $f
   }
@@ -81,138 +77,6 @@ for $package in $nushell_packages {
   }
 }
 
-def patch-file []: string -> string {
-  let file = $in
-
-  let body_spans = $file | find-commands
-  let patched_bodies = $body_spans | each {|it|
-      $file | str substring $it.from..$it.to
-        | patch-command $it.isenv
-    }
-
-  # Invert spans
-  # e.g. [{1 2} {3 4}] into [{0 1} {2 3} {4 ($file | str length)}]
-  let rest_spans = $body_spans
-    | each {[$in.from $in.to] }
-    | flatten
-    | [0 ...$in ($file | str length)]
-  let rest_spans = $rest_spans
-    | every 2
-    | zip ($rest_spans | skip 1 | every 2)
-    | each { { from: $in.0 to: $in.1 } }
-
-  # From inverted spans get text that did not make it
-  # into $patched_bodies
-  let rest_text = $rest_spans 
-    | each {|it| $file | str substring $it.from..$it.to }
-
-  # Interleave and join remaining text and patched bodies
-  $rest_text
-    | zip $patched_bodies
-    | flatten
-    | [...$in ($rest_text | last )]
-    | str join
-}
-
-# Find all exported command definitions
-# Input: text of script
-# Output: table, from - index of opening brace of command body
-#   to - index of closing brace of command body
-#   isenv - true if command is a `def --env`
-def find-commands []: string -> table<from: int to: int isenv: bool> {
-  let file = $in
-  # Parse matches 'export def <signature>{' any signature up until
-  # the opening curly bracket in 'all' group
-  # Additionaly matches '--env' in 'env' group
-  let normal_symbol = "[^{#'\"`]"
-  let comment = '(?:#.*\n)'
-  let string = "(?:'[^']*')|(?:\"[^\"]*\")|(?:`[^`]*`)"
-
-  let signature_middle = $"($normal_symbol)|($comment)|($string)"
-  let signature = '(?<all>export\s+def\s+(?<env>--env)?(?:' + $signature_middle  + ')+{)'
-  $file | parse -r $signature
-    | each {|it|
-        let from = $file | str index-of $it.all | $in + ($it.all | str length)
-        let to = $file | find-block-end $from 
-        let isenv = not ($it.env | is-empty)
-        {
-          from: $from
-          to: $to
-          isenv: $isenv
-        }
-      }
-}
-
-# Modify command body to set `$env.PATH`
-def patch-command [
-  is_env: bool
-]: string -> string {
-  if $is_env {
-    # `def --env` commands need special handling to correctly clear
-    # `$env.PATH` that may be modified by command itself
-    $"\n__set_env | do --env {($in)} | __unset_env\n"
-  } else {
-    # Non `def --env` commands don't change outside environment and
-    # can be wrapped with with-env which is faster than doing __set_env
-    # and __unset_env
-    $"\nwith-env \(__make_env\) {($in)}"
-  }
-}
-
-# Find end of current block
-#
-# Input: string with nu code
-# Output: index of '}' closing block
-def find-block-end [
-  start_idx: int # Index of '{' starting the block
-]: string -> int {
-  $in | split chars
-    | drop nth ..$start_idx
-    # Count parity of curly brackets until all are closed (depth 0)
-    # Then just skip rest of input
-    | reduce --fold { idx: $start_idx depth: 1 state: { name: code } } {|it, acc|
-        if $acc.depth == 0 {
-          $acc
-        } else match $acc.state.name {
-          code => { 
-            idx: ($acc.idx + 1)
-            depth: (match $it {
-              '{' => ($acc.depth + 1)
-              '}' => ($acc.depth - 1)
-              _ => $acc.depth
-            })
-            state: (match $it {
-              '#' => { name: comment }
-              "'" => { name: string type: "'" }
-              '"' => { name: string type: '"' }
-              '`' => { name: string type: '`' }
-              _ => { name: code }
-            })
-          }
-          comment => {
-            idx: ($acc.idx + 1)
-            depth: $acc.depth
-            state: (match $it {
-              "\n" => { name: code }
-              _ => { name: comment }
-            })
-          }
-          string => {
-            idx: ($acc.idx + 1)
-            depth: $acc.depth
-            state: (if $it == $acc.state.type {
-              { name: code }
-            } else match $it {
-              '\' => { name: escape type: $acc.state }
-              _ => $acc.state
-            })
-          }
-          escape => {
-            idx: ($acc.idx + 1)
-            depth: $acc.depth
-            state: $acc.state.type
-          }
-        }
-      }
-    | get idx
-}
+let lib_target = $'($env.out)/lib/nushell/($env.package_name)'
+mkdir ($lib_target | path dirname)
+cp -r build $lib_target
