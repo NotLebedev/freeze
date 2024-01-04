@@ -4,12 +4,19 @@ mkdir $'($out)/lib/nushell'
 
 let add_path = $env.symlinkjoin_path | path join bin
 
-# __set_env function injects binary dependencies into $env.PATH
+# __set_env command injects binary dependencies into $env.PATH
 # using symlinkJoinPath
+#
 # __unset_env finds and removes the first entry it meets
 # there may be more than one if commands call each other. Then
 # they should be popped one by one as a stack
-let set_env_func = $"
+#
+# __make_env creates argument for with-env
+let set_env_commands = $"
+def __make_env [] {
+  let path = ($add_path | to nuon)
+  [PATH [$path ...$env.PATH]]
+}
 
 def --env __set_env [] {
   let inp = $in
@@ -48,7 +55,7 @@ if ($add_path | path exists) {
   for $f in $all_scripts {
     log $'Patching ($f)'
     let source = open --raw $f
-    let script_patched = $source | patch-file | [$in $set_env_func] | str join
+    let script_patched = $source | patch-file | [$in $set_env_commands] | str join
     rm $f
     $script_patched | save -f $f
   }
@@ -77,10 +84,11 @@ for $package in $nushell_packages {
 def patch-file []: string -> string {
   let file = $in
 
-  let body_spans = $file | find-functions
-  let patched_bodies = $body_spans
-    | each {|it| $file | str substring $it.from..$it.to }
-    | each { patch-function }
+  let body_spans = $file | find-commands
+  let patched_bodies = $body_spans | each {|it|
+      $file | str substring $it.from..$it.to
+        | patch-command $it.isenv
+    }
 
   # Invert spans
   # e.g. [{1 2} {3 4}] into [{0 1} {2 3} {4 ($file | str length)}]
@@ -88,7 +96,8 @@ def patch-file []: string -> string {
     | each {[$in.from $in.to] }
     | flatten
     | [0 ...$in ($file | str length)]
-  let rest_spans = $rest_spans | every 2
+  let rest_spans = $rest_spans
+    | every 2
     | zip ($rest_spans | skip 1 | every 2)
     | each { { from: $in.0 to: $in.1 } }
 
@@ -105,21 +114,43 @@ def patch-file []: string -> string {
     | str join
 }
 
-def find-functions []: string -> table<from: int to: int> {
+# Find all exported command definitions
+# Input: text of script
+# Output: table, from - index of opening brace of command body
+#   to - index of closing brace of command body
+#   isenv - true if command is a `def --env`
+def find-commands []: string -> table<from: int to: int isenv: bool> {
   let file = $in
   # Parse matches 'export def <signature>{' any signature up until
-  # the opening curly bracket
-  $file | parse -r '(export\s+def[^{]+{)'
-    | get capture0 
-    | each {|it| $file | str index-of $it | $in + ($it | str length) }
-    | each {|it| $file | find-block-end $it | { from: $it to: $in } }
+  # the opening curly bracket in 'all' group
+  # Additionaly matches '--env' in 'env' group
+  $file | parse -r '(?<all>export\s+def\s+(?<env>--env)?[^{]+{)'
+    | each {|it|
+        let from = $file | str index-of $it.all | $in + ($it.all | str length)
+        let to = $file | find-block-end $from 
+        let isenv = not ($it.env | is-empty)
+        {
+          from: $from
+          to: $to
+          isenv: $isenv
+        }
+      }
 }
 
-# Modify function body by wrapping existing code in do
-# block and adding __set_env __unset_env call in pipe
-# This way values are correctly piped into existing script
-def patch-function []: string -> string {
-  $"\n__set_env | do --env {($in)} | __unset_env\n"
+# Modify command body to set `$env.PATH`
+def patch-command [
+  is_env: bool
+]: string -> string {
+  if $is_env {
+    # `def --env` commands need special handling to correctly clear
+    # `$env.PATH` that may be modified by command itself
+    $"\n__set_env | do --env {($in)} | __unset_env\n"
+  } else {
+    # Non `def --env` commands don't change outside environment and
+    # can be wrapped with with-env which is faster than doing __set_env
+    # and __unset_env
+    $"\nwith-env \(__make_env\) {($in)}"
+  }
 }
 
 # Find end of current block
@@ -134,18 +165,18 @@ def find-block-end [
     # Count parity of curly brackets until all are closed (depth 0)
     # Then just skip rest of input
     | reduce --fold { idx: $start_idx depth: 1 } {|it, acc|
-      if $acc.depth == 0 {
-        $acc
-      } else {
-        { 
-          idx: ($acc.idx + 1)
-          depth: (match $it {
-            '{' => ($acc.depth + 1)
-            '}' => ($acc.depth - 1)
-            _ => $acc.depth
-          })
+        if $acc.depth == 0 {
+          $acc
+        } else {
+          { 
+            idx: ($acc.idx + 1)
+            depth: (match $it {
+              '{' => ($acc.depth + 1)
+              '}' => ($acc.depth - 1)
+              _ => $acc.depth
+            })
+          }
         }
       }
-    }
     | get idx
 }
