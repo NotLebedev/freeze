@@ -2,7 +2,7 @@ use std::{env, path::PathBuf};
 
 use nu_parser::parse;
 use nu_protocol::{
-    ast::{Expr, Expression, Pipeline, PipelineElement},
+    ast::{Block, Expr, Expression, Pipeline, PipelineElement},
     engine::{EngineState, StateWorkingSet},
     Span, Value,
 };
@@ -16,16 +16,9 @@ fn main() {
     let mut working_set = StateWorkingSet::new(&engine_state);
     let parsed_block = parse(&mut working_set, Some(&args[1]), &contents, true);
 
-    let search = Search {
-        contents: &contents,
-    };
+    let search = Search::new(&contents);
 
-    let export_defs: Vec<ExportDef> = parsed_block
-        .pipelines
-        .iter()
-        .map(|pipeline| search.process_pipeline(pipeline))
-        .flatten()
-        .collect();
+    let export_defs: Vec<ExportDef> = search.in_block(&parsed_block).collect();
 
     for def in export_defs {
         println!(
@@ -49,15 +42,25 @@ struct Search<'a> {
 }
 
 impl<'a: 'b, 'b> Search<'a> {
-    fn process_pipeline(&'a self, pipeline: &'b Pipeline) -> impl Iterator<Item = ExportDef> + 'b {
+    fn new(contents: &'a [u8]) -> Self {
+        Self { contents }
+    }
+
+    fn in_block(&'a self, block: &'b Block) -> impl Iterator<Item = ExportDef> + 'b {
+        block
+            .pipelines
+            .iter()
+            .flat_map(|pipeline| self.in_pipeline(pipeline))
+    }
+
+    fn in_pipeline(&'a self, pipeline: &'b Pipeline) -> impl Iterator<Item = ExportDef> + 'b {
         pipeline
             .elements
             .iter()
-            .map(move |element| self.process_pipeline_element(element))
-            .flatten()
+            .filter_map(move |element| self.in_pipeline_element(element))
     }
 
-    fn process_pipeline_element(&self, element: &PipelineElement) -> Option<ExportDef> {
+    fn in_pipeline_element(&self, element: &PipelineElement) -> Option<ExportDef> {
         match element {
             PipelineElement::Expression(
                 _,
@@ -66,14 +69,17 @@ impl<'a: 'b, 'b> Search<'a> {
                     ..
                 },
             ) => {
-                if &self.contents[call.head.start..call.head.end] == "export def".as_bytes() {
+                if self.is_export_def(call.head) {
+                    const NAME_INDEX: usize = 0;
+                    const BODY_INDEX: usize = 2;
+                    const ENV_FLAG: &str = "env";
                     let name = call
-                        .positional_nth(0)
+                        .positional_nth(NAME_INDEX)
                         .and_then(Expression::as_string)
                         .unwrap_or_else(|| "".into());
 
-                    let is_env = call.has_flag("env");
-                    let body = call.positional_nth(2)?.span;
+                    let is_env = call.has_flag(ENV_FLAG);
+                    let body = call.positional_nth(BODY_INDEX)?.span;
                     Some(ExportDef { name, body, is_env })
                 } else {
                     None
@@ -82,7 +88,13 @@ impl<'a: 'b, 'b> Search<'a> {
             _ => None,
         }
     }
+
+    fn is_export_def(&self, span: Span) -> bool {
+        const EXPORT_DEF_NAME: &str = "export def";
+        &self.contents[span.start..span.end] == EXPORT_DEF_NAME.as_bytes()
+    }
 }
+
 fn get_engine_state() -> EngineState {
     let mut engine_state = nu_cmd_lang::create_default_context();
 
