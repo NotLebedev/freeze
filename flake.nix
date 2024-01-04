@@ -22,6 +22,8 @@
           let
             pkgs = prev.extend nuenv.overlays.default;
             system = pkgs.system;
+            craneLib = crane.lib.${system};
+            patcher = import ./lib/patcher { inherit craneLib; };
             lib = import ./lib { };
           in
           {
@@ -38,7 +40,7 @@
               # packages: optinal list of packages used by this package. Binary packages (those
               #     with files in `bin/` directory) and other freeze packages are supported.
               #     other will be ignored 
-              buildPackage = lib.buildNuPackage system pkgs;
+              buildPackage = lib.buildNuPackage system pkgs patcher.package;
 
               # Create a nushell wrapper with no user configuration
               # and specified packages in $env.NU_LIB_DIRS

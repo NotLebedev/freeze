@@ -4,6 +4,7 @@
   buildNuPackage =
     system:
     pkgs:
+    patcher:
     { name
     , src
     , packages ? [ ]
@@ -23,6 +24,7 @@
       # Unfortunately nushell does not have ln command. For now use uutils one
       # for (hopefully) better compat in future
       ln = "${pkgs.uutils-coreutils}/bin/uutils-ln";
+      patcher = "${patcher}/bin/freeze-patcher";
       build = builtins.readFile ./build.nu;
     };
 
