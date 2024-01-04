@@ -40,11 +40,11 @@
               # packages: optinal list of packages used by this package. Binary packages (those
               #     with files in `bin/` directory) and other freeze packages are supported.
               #     other will be ignored 
-              buildPackage = lib.buildNuPackage system pkgs patcher.package;
+              buildPackage = lib.buildNuPackage pkgs patcher.package;
 
               # Create a nushell wrapper with no user configuration
               # and specified packages in $env.NU_LIB_DIRS
-              withPackages = lib.withPackages system pkgs;
+              withPackages = lib.withPackages pkgs;
 
               # Turn nushell script into a binary. Wraps given script, located in package, 
               # as "bin/<binName>"
@@ -55,7 +55,7 @@
               #     on part of nushell, while it searches through -I arguments it does not expand
               #     search for mod.nu for directories like `use` does
               # binName: name of the resulting binary in "bin/" of derivation
-              wrapScript = lib.wrapScript system pkgs;
+              wrapScript = lib.wrapScript pkgs;
             } // (prev.nushell-freeze or { });
           };
 

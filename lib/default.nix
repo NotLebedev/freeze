@@ -2,7 +2,6 @@
 
 {
   buildNuPackage =
-    system:
     pkgs:
     patcher:
     { name
@@ -28,7 +27,7 @@
       build = builtins.readFile ./build.nu;
     };
 
-  withPackages = system: pkgs: packages:
+  withPackages = pkgs: packages:
     let
       joined = pkgs.lib.makeSearchPath "lib/nushell" packages;
       # Replacement is not a whitespace. It is actually a \x1e character
@@ -39,7 +38,7 @@
       ${pkgs.nushell}/bin/nu -n -I "${replaced}" $@
     '';
 
-  wrapScript = system: pkgs: { package, script, binName }:
+  wrapScript = pkgs: { package, script, binName }:
     let
       scriptFullPath = package + "/lib/nushell/${script}";
     in
