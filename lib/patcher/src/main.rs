@@ -1,4 +1,7 @@
-use std::{env, path::PathBuf};
+use std::{
+    env,
+    io::{self, Read, Write},
+};
 
 use nu_parser::parse;
 use nu_protocol::{
@@ -8,27 +11,37 @@ use nu_protocol::{
 };
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let contents =
-        std::fs::read(PathBuf::from(&args[1])).unwrap_or_else(|_| panic!("Could not open file"));
+    let mut contents = Vec::new();
+    io::stdin()
+        .read_to_end(&mut contents)
+        .expect("Failed to read stdio");
 
     let engine_state = get_engine_state();
     let mut working_set = StateWorkingSet::new(&engine_state);
-    let parsed_block = parse(&mut working_set, Some(&args[1]), &contents, true);
+    let parsed_block = parse(&mut working_set, None, &contents, true);
 
     let search = Search::new(&contents);
 
     let export_defs: Vec<ExportDef> = search.in_block(&parsed_block).collect();
+    write_result(&contents, &export_defs).expect("Failed to write to stdio");
+}
 
+fn write_result(contents: &[u8], export_defs: &[ExportDef]) -> Result<(), io::Error> {
+    const PREFIX: &[u8] = "{\nwith-env (__make_env) ".as_bytes();
+    const SUFFIX: &[u8] = "\n}".as_bytes();
+    const ENV_PREFIX: &[u8] = "{\n__set_env | do --env ".as_bytes();
+    const ENV_SUFFIX: &[u8] = " | __unset_env\n}".as_bytes();
+
+    let mut last_start = 0;
     for def in export_defs {
-        println!(
-            "name: {} is_env: {} body:\n```\n{}\n```\n",
-            def.name,
-            def.is_env,
-            std::str::from_utf8(&contents[def.body.start..def.body.end])
-                .expect("Invalid utf8 string")
-        )
+        io::stdout().write_all(&contents[last_start..def.body.start])?;
+        io::stdout().write_all(if def.is_env { ENV_PREFIX } else { PREFIX })?;
+        io::stdout().write_all(&contents[def.body.start..def.body.end])?;
+        io::stdout().write_all(if def.is_env { ENV_SUFFIX } else { SUFFIX })?;
+        last_start = def.body.end;
     }
+
+    io::stdout().write_all(&contents[last_start..contents.len()])
 }
 
 struct ExportDef {
