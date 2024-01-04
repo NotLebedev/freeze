@@ -8,6 +8,7 @@ let
     "pipeSyntax"
     "envScript"
     "subcommands"
+    "commentsAndString"
   ];
 in
 builtins.listToAttrs (builtins.map
