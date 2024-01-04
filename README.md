@@ -121,10 +121,25 @@ Another way, that is more commonly used with existing scripts is
 [makeWrapper](https://github.com/NixOS/nixpkgs/blob/9a255aba3817d477e0959b53e9001d566bfb3595/pkgs/build-support/setup-hooks/make-wrapper.sh)
 script that allows to create a wrapper around existing scripts that sets (or unsets) some
 environment variables. In this case `$env.PATH` is of interest. Unlike bash scripts nushell ones
-can have more then one commands inside them and hove some tricky behavior with `def --env`.
+can have more then one command inside them and hove some tricky behavior with `def --env`.
 
 To solve this scripts are patched (but only if package has dependencies with `bin` directory).
-For each `export def` is patched in the following way:
+The straightforward approach is to wrap command body in `with-env`:
+```nu
+export def test [ ... ]: input -> output {
+  commands
+}
+
+# Turned into
+
+export def test [ ... ]: input -> output { # Signature remains untouched
+  with-env (__make_env) { # __make_env is a helper command that adds entries to `$env.PATH`
+    commands # Run original commands inside this block
+  }
+}
+```
+
+A more clever approach is needed for `def --env`:
 
 ```nu
 export def --env test [ ... ]: input -> output {
@@ -143,12 +158,13 @@ export def --env test [ ... ]: input -> output { # Signature remains untouched
 This approach solves several problems. First wrapping original code in `do --env` helps
 with handling input and output of command. Without this it becomes tricky to handle 
 input for commands beginning with `let`. Using `do --env` instead of `with-env` allows to correctly
-handle `def --env` functions. Also because such functions may edit `$env.PATH` special logic is
-needed in `__unset_env`. To work around this issue all binary dependencies are packaged into one
+handle changes of environment inside `def --env` functions. Also because such functions may edit
+`$env.PATH` special logic is needed in `__unset_env`. To work around this issue all binary
+dependencies are packaged into one
 [symlinkJoin](https://nixos.org/manual/nixpkgs/stable/#trivial-builder-symlinkJoin) derivation
 and `__set_env` adds one entry to `$env.PATH` and `__unset_env` removes it (by value, not index
 in PATH to handle modifications of PATH by original command correctly). This solution allows
-seamless handling of all most cases.
+seamless handling of most cases.
 
 ### What to do for `use` of other nushell scripts?
 *Short*: Add links to all dependencies into derivation, kinda like symlink join.
