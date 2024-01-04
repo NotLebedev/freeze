@@ -124,7 +124,13 @@ def find-commands []: string -> table<from: int to: int isenv: bool> {
   # Parse matches 'export def <signature>{' any signature up until
   # the opening curly bracket in 'all' group
   # Additionaly matches '--env' in 'env' group
-  $file | parse -r '(?<all>export\s+def\s+(?<env>--env)?[^{]+{)'
+  let normal_symbol = "[^{#'\"`]"
+  let comment = '(?:#.*\n)'
+  let string = "(?:'[^']*')|(?:\"[^\"]*\")|(?:`[^`]*`)"
+
+  let signature_middle = $"($normal_symbol)|($comment)|($string)"
+  let signature = '(?<all>export\s+def\s+(?<env>--env)?(?:' + $signature_middle  + ')+{)'
+  $file | parse -r $signature
     | each {|it|
         let from = $file | str index-of $it.all | $in + ($it.all | str length)
         let to = $file | find-block-end $from 
@@ -164,17 +170,47 @@ def find-block-end [
     | drop nth ..$start_idx
     # Count parity of curly brackets until all are closed (depth 0)
     # Then just skip rest of input
-    | reduce --fold { idx: $start_idx depth: 1 } {|it, acc|
+    | reduce --fold { idx: $start_idx depth: 1 state: { name: code } } {|it, acc|
         if $acc.depth == 0 {
           $acc
-        } else {
-          { 
+        } else match $acc.state.name {
+          code => { 
             idx: ($acc.idx + 1)
             depth: (match $it {
               '{' => ($acc.depth + 1)
               '}' => ($acc.depth - 1)
               _ => $acc.depth
             })
+            state: (match $it {
+              '#' => { name: comment }
+              "'" => { name: string type: "'" }
+              '"' => { name: string type: '"' }
+              '`' => { name: string type: '`' }
+              _ => { name: code }
+            })
+          }
+          comment => {
+            idx: ($acc.idx + 1)
+            depth: $acc.depth
+            state: (match $it {
+              "\n" => { name: code }
+              _ => { name: comment }
+            })
+          }
+          string => {
+            idx: ($acc.idx + 1)
+            depth: $acc.depth
+            state: (if $it == $acc.state.type {
+              { name: code }
+            } else match $it {
+              '\' => { name: escape type: $acc.state }
+              _ => $acc.state
+            })
+          }
+          escape => {
+            idx: ($acc.idx + 1)
+            depth: $acc.depth
+            state: $acc.state.type
           }
         }
       }
