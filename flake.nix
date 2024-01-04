@@ -7,9 +7,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils.url = "github:numtide/flake-utils";
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, nuenv, flake-utils }:
+  outputs = { self, nixpkgs, nuenv, flake-utils, crane, ... }:
     {
       overlays = rec {
         default = freeze;
@@ -17,6 +21,7 @@
         freeze = final: prev:
           let
             pkgs = prev.extend nuenv.overlays.default;
+            system = pkgs.system;
             lib = import ./lib { };
           in
           {
@@ -33,11 +38,11 @@
               # packages: optinal list of packages used by this package. Binary packages (those
               #     with files in `bin/` directory) and other freeze packages are supported.
               #     other will be ignored 
-              buildPackage = lib.buildNuPackage pkgs.system pkgs;
+              buildPackage = lib.buildNuPackage system pkgs;
 
               # Create a nushell wrapper with no user configuration
               # and specified packages in $env.NU_LIB_DIRS
-              withPackages = lib.withPackages pkgs.system pkgs;
+              withPackages = lib.withPackages system pkgs;
 
               # Turn nushell script into a binary. Wraps given script, located in package, 
               # as "bin/<binName>"
@@ -48,7 +53,7 @@
               #     on part of nushell, while it searches through -I arguments it does not expand
               #     search for mod.nu for directories like `use` does
               # binName: name of the resulting binary in "bin/" of derivation
-              wrapScript = lib.wrapScript pkgs.system pkgs;
+              wrapScript = lib.wrapScript system pkgs;
             } // (prev.nushell-freeze or { });
           };
 
@@ -73,9 +78,18 @@
             nuenv.overlays.default
           ];
         };
+        craneLib = crane.lib.${system};
+        patcher = import lib/patcher { inherit craneLib; };
       in
       {
-        checks = import ./checks { inherit pkgs; };
+        checks = import ./checks { inherit pkgs; } // patcher.checks;
+        devShells.default = craneLib.devShell {
+          checks = patcher.checks;
+
+          packages = with pkgs; [
+            rust-analyzer
+          ];
+        };
       }
     );
 }

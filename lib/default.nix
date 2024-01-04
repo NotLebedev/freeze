@@ -1,7 +1,6 @@
 { ... }:
 
 {
-
   buildNuPackage =
     system:
     pkgs:
