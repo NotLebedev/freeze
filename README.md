@@ -57,7 +57,7 @@ all available packages. Here are some examples:
 nushell-freeze.packages.nu_scripts 
 
 # One file from nu_scipts as its own package named git-completions
-# Use it in nushell with `use git-completions/git-completions.nu *`
+# Use it in nushell with `use git-completions *`
 # Unlike nu_scripts package nothing else is added to `$env.NU_LIB_DIRS` when installing this
 # package
 nushell-freeze.packages.from_nu_scripts "git-completions" "custom-completions/git/git-completions.nu"
