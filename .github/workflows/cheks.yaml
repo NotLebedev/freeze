@@ -12,4 +12,8 @@ jobs:
     - uses: cachix/install-nix-action@v22
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: cachix/cachix-action@v12
+      with:
+        name: notlebedev
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - run: nix flake check --print-build-logs
