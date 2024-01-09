@@ -35,6 +35,17 @@ nixpkgs.overlays = [ freeze.overlays.default ];
 of nixos configuration, not home manager one. Otherwise nothing is added to `pkgs` for some
 reason.
 
+Freeze also includes a pretty sizeable binary, which may take a long time to build. Consider adding
+[cachix](https://notlebedev.cachix.org/) binary cache as described on page, or directly to your
+nixos configuration like so:
+```nix
+
+nix.settings = {
+  substituters = [ "https://notlebedev.cachix.org" ];
+  trusted-public-keys = [ "notlebedev.cachix.org-1:hGfF7W2IxXfxf9fiDrrUhJH6pypRq5QMNgJ7BO9vMAQ=" ];
+};
+```
+
 ### Packaging functions
 With overlay installed `pkgs.nushell-freeze` has this functions:
 * `buildNuPackage` - package nushell scripts. Automatically manages binary dependencies and
