@@ -15,7 +15,7 @@ pkgs.nuenv.mkDerivation {
 
   build = ''
     #!/usr/bin/env nu
-    use assert
+    use std assert
     use ${package}/lib/nushell/package *
 
     assert equal ({a: {b: qwe}} | to json | simple-pipe) qwe

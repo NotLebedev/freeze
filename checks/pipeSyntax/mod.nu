@@ -1,4 +1,4 @@
-use assert # Assert is part of nushell
+use std assert # Assert is part of nushell
 
 export def simple-pipe []: string -> string {
   jq .a.b | from json

@@ -22,7 +22,7 @@ pkgs.nuenv.mkDerivation {
 
   build = ''
     #!/usr/bin/env nu
-    use assert
+    use std assert
     
     do {
       # Just like any other derivation it can be embedded directly into
