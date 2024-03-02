@@ -37,10 +37,10 @@ log $'Additional $env.PATH is [ ($add_path) ]'
 # Copy all files from source as is if source is a directory
 # or copy rename to mod.nu if source is a file
 if ($env.copy | path type) == dir {
-  cp -r $env.copy build
+  cp -r --preserve [] $env.copy build
 } else {
   mkdir build
-  cp $env.copy build/mod.nu
+  cp --preserve [] $env.copy build/mod.nu
 }
 
 let all_scripts = glob build/**/*.nu
