@@ -30,7 +30,7 @@ pkgs.nuenv.mkDerivation {
   build = ''
     #!/usr/bin/env nu
     use ${package}/lib/nushell/package
-    use assert
+    use std assert
     
     package
 

@@ -1,4 +1,4 @@
-use assert # Assert is part of nushell
+use std assert # Assert is part of nushell
 
 def check-jq-installed []: nothing -> nothing {
   assert equal (which jq | length) 1
