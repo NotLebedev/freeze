@@ -5,7 +5,7 @@ use std::{
 
 use nu_parser::parse;
 use nu_protocol::{
-    ast::{Block, Expr, Expression, Pipeline, PipelineElement},
+    ast::{Block, Expr, Pipeline, PipelineElement},
     engine::{EngineState, StateWorkingSet},
     Span, Value,
 };
@@ -73,19 +73,13 @@ impl<'a: 'b, 'b> Search<'a> {
     }
 
     fn in_pipeline_element(&self, element: &PipelineElement) -> Option<ExportDef> {
-        match element {
-            PipelineElement::Expression(
-                _,
-                Expression {
-                    expr: Expr::Call(call),
-                    ..
-                },
-            ) => {
+        match &element.expr.expr {
+            Expr::Call(call) => {
                 if self.is_export_def(call.head) {
                     const BODY_INDEX: usize = 2;
                     const ENV_FLAG: &str = "env";
 
-                    let is_env = call.has_flag(ENV_FLAG);
+                    let is_env = call.get_named_arg(ENV_FLAG).is_some();
                     let body = call.positional_nth(BODY_INDEX)?.span;
                     Some(ExportDef { body, is_env })
                 } else {
