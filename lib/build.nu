@@ -11,7 +11,7 @@ let add_path = $env.symlinkjoin_path | path join bin
 let set_env_commands = $"
 def __make_env [] {
   let path = ($add_path | to nuon)
-  [PATH [$path ...$env.PATH]]
+  {PATH: [$path ...$env.PATH]}
 }
 
 def --env __set_env [] {
