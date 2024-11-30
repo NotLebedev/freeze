@@ -7,22 +7,27 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils.url = "github:numtide/flake-utils";
-    crane = {
-      url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    crane.url = "github:ipetkov/crane";
   };
 
-  outputs = { self, nixpkgs, nuenv, flake-utils, crane, ... }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      nuenv,
+      flake-utils,
+      crane,
+      ...
+    }:
     {
       overlays = rec {
         default = freeze;
 
-        freeze = final: prev:
+        freeze =
+          final: prev:
           let
             pkgs = prev.extend nuenv.overlays.default;
-            system = pkgs.system;
-            craneLib = crane.lib.${system};
+            craneLib = crane.mkLib pkgs;
             patcher = import ./lib/patcher { inherit craneLib; };
             lib = import ./lib { };
           in
@@ -59,7 +64,8 @@
             } // (prev.nushell-freeze or { });
           };
 
-        packages = final: prev:
+        packages =
+          final: prev:
           let
             pkgs = prev.extend self.overlays.default;
           in
@@ -71,7 +77,9 @@
       };
 
       homeManagerModule = (import ./lib { }).homeManagerModule;
-    } // flake-utils.lib.eachDefaultSystem (system:
+    }
+    // flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -80,7 +88,7 @@
             nuenv.overlays.default
           ];
         };
-        craneLib = crane.lib.${system};
+        craneLib = crane.mkLib pkgs;
         patcher = import lib/patcher { inherit craneLib; };
       in
       {

@@ -6,7 +6,7 @@ def check-jq-installed []: nothing -> nothing {
 
 export def --env new-var []: nothing -> nothing {
   check-jq-installed
-  $env.QWE = rty
+  $env.QWE = 'rty'
 }
 
 export def --env add-to-path []: nothing -> nothing {
