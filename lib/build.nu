@@ -9,19 +9,19 @@ let add_path = $env.symlinkjoin_path | path join bin
 #
 # __make_env creates argument for with-env
 let set_env_commands = $"
-def __make_env [] {
+def __make_env []: nothing -> record {
   let path = ($add_path | to nuon)
   {PATH: [$path ...$env.PATH]}
 }
 
-def --env __set_env [] {
+def --env __set_env []: any -> any {
   let inp = $in
   let path = ($add_path | to nuon)
   $env.PATH = [ $path ...$env.PATH ]
   $inp
 }
 
-def --env __unset_env [] {
+def --env __unset_env []: any -> any {
   let inp = $in
   let idx = $env.PATH | enumerate
     | where item == ($add_path | to nuon)
