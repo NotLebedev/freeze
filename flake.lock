@@ -67,6 +67,22 @@
         "type": "github"
       }
     },
+    "nu_scripts": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1732712469,
+        "narHash": "sha256-NL1WrKUcNPqxHTACGr9rZb6yBM2qKbu0xt0a5K+XihA=",
+        "owner": "nushell",
+        "repo": "nu_scripts",
+        "rev": "47846699c78c9f0a82143db3d9e4367c7112a932",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nushell",
+        "repo": "nu_scripts",
+        "type": "github"
+      }
+    },
     "nuenv": {
       "inputs": {
         "nixpkgs": [
@@ -93,6 +109,7 @@
         "crane": "crane",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
+        "nu_scripts": "nu_scripts",
         "nuenv": "nuenv"
       }
     },

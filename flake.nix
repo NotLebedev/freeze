@@ -8,6 +8,10 @@
     };
     flake-utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
+    nu_scripts = {
+      url = "github:nushell/nu_scripts";
+      flake = false;
+    };
   };
 
   outputs =
@@ -18,7 +22,7 @@
       flake-utils,
       crane,
       ...
-    }:
+    }@inputs:
     {
       overlays = rec {
         default = freeze;
@@ -71,7 +75,10 @@
           in
           {
             nushell-freeze = {
-              packages = import ./packages { pkgs = pkgs; };
+              packages = import ./packages {
+                pkgs = pkgs;
+                inputs = inputs;
+              };
             } // (prev.nushell-freeze or { });
           };
       };
@@ -85,6 +92,7 @@
           inherit system;
           overlays = [
             self.overlays.freeze
+            self.overlays.packages
             nuenv.overlays.default
           ];
         };
