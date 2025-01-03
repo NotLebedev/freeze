@@ -1,37 +1,4 @@
 let add_path = $env.symlinkjoin_path | path join bin
-
-# __set_env command injects binary dependencies into $env.PATH
-# using symlinkJoinPath
-#
-# __unset_env finds and removes the first entry it meets
-# there may be more than one if commands call each other. Then
-# they should be popped one by one as a stack
-#
-# __make_env creates argument for with-env
-let set_env_commands = $"
-def __make_env []: nothing -> record {
-  let path = ($add_path | to nuon)
-  {PATH: [$path ...$env.PATH]}
-}
-
-def --env __set_env []: any -> any {
-  let inp = $in
-  let path = ($add_path | to nuon)
-  $env.PATH = [ $path ...$env.PATH ]
-  $inp
-}
-
-def --env __unset_env []: any -> any {
-  let inp = $in
-  let idx = $env.PATH | enumerate
-    | where item == ($add_path | to nuon)
-    | get index?.0?
-
-  if $idx != null {
-    $env.PATH = \($env.PATH | drop nth $idx\)
-  }
-  $inp
-}"
 log $'Additional $env.PATH is [ ($add_path) ]'
 
 # Copy all files from source as is if source is a directory
@@ -51,7 +18,7 @@ if ($add_path | path exists) {
   for $f in $all_scripts {
     log $'Patching ($f)'
     let source = open --raw $f
-    let script_patched = $source | ^$env.patcher | [$in $set_env_commands] | str join
+    let script_patched = $source | ^$env.patcher
     rm $f
     $script_patched | save -f $f
   }
