@@ -12,34 +12,30 @@ let
 
   cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-  my-crate = craneLib.buildPackage (commonArgs // {
-    inherit cargoArtifacts;
-    doCheck = false;
-  });
+  patcher = craneLib.buildPackage (
+    commonArgs
+    // {
+      inherit cargoArtifacts;
+      doCheck = false;
+    }
+  );
 in
 {
   checks = {
-    inherit my-crate;
+    inherit patcher;
 
-    my-crate-clippy = craneLib.cargoClippy (commonArgs // {
-      inherit cargoArtifacts;
-      cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-    });
+    patcher-clippy = craneLib.cargoClippy (
+      commonArgs
+      // {
+        inherit cargoArtifacts;
+        cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+      }
+    );
 
-    my-crate-doc = craneLib.cargoDoc (commonArgs // {
-      inherit cargoArtifacts;
-    });
-
-    my-crate-fmt = craneLib.cargoFmt {
+    patcher-fmt = craneLib.cargoFmt {
       inherit src;
     };
-
-    my-crate-nextest = craneLib.cargoNextest (commonArgs // {
-      inherit cargoArtifacts;
-      partitions = 1;
-      partitionType = "count";
-    });
   };
 
-  package = my-crate;
+  package = patcher;
 }

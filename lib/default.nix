@@ -2,32 +2,38 @@
 
 {
   buildNuPackage =
-    pkgs:
-    patcher:
-    { name
-    , src
-    , packages ? [ ]
-    , ...
-    }: pkgs.nuenv.mkDerivation {
-      inherit name;
-      inherit src;
-      inherit packages;
-
-      copy = src;
-      package_name = name;
+    pkgs: patcher:
+    {
+      name,
+      src,
+      packages ? [ ],
+      ...
+    }:
+    let
       symlinkjoin_path = pkgs.symlinkJoin {
         name = "${name}-symlinkjoin";
         paths = packages;
       };
+    in
+    pkgs.stdenv.mkDerivation {
+      inherit name;
+      inherit src;
+      inherit packages;
 
-      # Unfortunately nushell does not have ln command. For now use uutils one
-      # for (hopefully) better compat in future
-      ln = "${pkgs.uutils-coreutils}/bin/uutils-ln";
-      patcher = "${patcher}/bin/freeze-patcher";
-      build = builtins.readFile ./build.nu;
+      phases = [
+        "buildPhase"
+        "installPhase"
+      ];
+
+      buildPhase = "${patcher}/bin/freeze-patcher ${src} ${name} ${symlinkjoin_path}";
+      installPhase = ''
+        mkdir -p "$out/lib/nushell"
+        cp -r build "$out/lib/nushell/${name}"
+      '';
     };
 
-  withPackages = pkgs: packages:
+  withPackages =
+    pkgs: packages:
     let
       joined = pkgs.lib.makeSearchPath "lib/nushell" packages;
       # Replacement is not a whitespace. It is actually a \x1e character
@@ -38,7 +44,13 @@
       ${pkgs.nushell}/bin/nu -n -I "${replaced}" $@
     '';
 
-  wrapScript = pkgs: { package, script, binName }:
+  wrapScript =
+    pkgs:
+    {
+      package,
+      script,
+      binName,
+    }:
     let
       scriptFullPath = package + "/lib/nushell/${script}";
     in
@@ -46,21 +58,25 @@
       ${pkgs.nushell}/bin/nu ${scriptFullPath} $@
     '';
 
-  homeManagerModule = { lib, config, ... }: {
-    options.programs.nushell.freeze-packages = with lib; mkOption {
-      type = with types; listOf package;
-      default = [ ];
-      description = mdDoc "List of freeze packages to add to $env.NU_LIB_DIRS";
-    };
+  homeManagerModule =
+    { lib, config, ... }:
+    {
+      options.programs.nushell.freeze-packages =
+        with lib;
+        mkOption {
+          type = with types; listOf package;
+          default = [ ];
+          description = mdDoc "List of freeze packages to add to $env.NU_LIB_DIRS";
+        };
 
-    config.programs.nushell.extraEnv =
-      let
-        dirs = builtins.map (p: p + "/lib/nushell") config.programs.nushell.freeze-packages;
-        asNuStrings = builtins.map (p: "'" + p + "'") dirs;
-        packagesNuArray = "[ " + (builtins.concatStringsSep " " asNuStrings) + " ]";
-      in
-      ''
-        $env.NU_LIB_DIRS = ($env.NU_LIB_DIRS | append ${packagesNuArray})
-      '';
-  };
+      config.programs.nushell.extraEnv =
+        let
+          dirs = builtins.map (p: p + "/lib/nushell") config.programs.nushell.freeze-packages;
+          asNuStrings = builtins.map (p: "'" + p + "'") dirs;
+          packagesNuArray = "[ " + (builtins.concatStringsSep " " asNuStrings) + " ]";
+        in
+        ''
+          $env.NU_LIB_DIRS = ($env.NU_LIB_DIRS | append ${packagesNuArray})
+        '';
+    };
 }

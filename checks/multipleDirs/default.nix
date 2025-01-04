@@ -1,25 +1,22 @@
 { pkgs, ... }:
 
 let
+  dep = pkgs.nushell-freeze.buildPackage {
+    name = "dep";
+    src = ./dep.nu;
+  };
+
   package = pkgs.nushell-freeze.buildPackage {
     name = "package";
-    src = ./.;
-    packages = with pkgs; [
-      jq
-    ];
+    src = ./src;
+    packages = [ dep ];
   };
 in
 ''
   #!/usr/bin/env nu
-  use std assert
   use ${package}/lib/nushell/package *
 
-  test0
-  test1
-  test2
-  test3
-  test4
-  test5
+  test
 
   mkdir $env.out
 ''

@@ -9,17 +9,11 @@ let
     ];
   };
 in
-pkgs.nuenv.mkDerivation {
-  name = "checkScriptScriptDep";
-  src = ./.;
+''
+  #!/usr/bin/env nu
+  use ${package}/lib/nushell/package
 
-  build = ''
-    #!/usr/bin/env nu
-    use ${package}/lib/nushell/package
+  package
 
-    package
-
-    mkdir $env.out
-  '';
-}
-
+  mkdir $env.out
+''

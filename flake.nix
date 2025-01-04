@@ -2,12 +2,13 @@
   description = "";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nuenv = {
-      url = "github:NotLebedev/nuenv";
+    flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    flake-utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
+
     nu_scripts = {
       url = "github:nushell/nu_scripts";
       flake = false;
@@ -18,9 +19,9 @@
     {
       self,
       nixpkgs,
-      nuenv,
       flake-utils,
       crane,
+      rust-overlay,
       ...
     }@inputs:
     {
@@ -30,7 +31,11 @@
         freeze =
           final: prev:
           let
-            pkgs = prev.extend nuenv.overlays.default;
+            # Building patcher with fixed nixpkgs from this flake
+            pkgs = import nixpkgs {
+              system = prev.system;
+              overlays = [ (import rust-overlay) ];
+            };
             craneLib = crane.mkLib pkgs;
             patcher = import ./lib/patcher { inherit craneLib; };
             lib = import ./lib { };
@@ -43,19 +48,19 @@
               #     (e.g. for `name = "myPackage"` `use myPackage/myScipt *`)
               # src: source file or directory to create package from.
               #     If directory is specified its contents are copied to
-              #     `lib/nushell/<name>/` directory 
+              #     `lib/nushell/<name>/` directory
               #     If a file is specified it is copied (and renamed) to
               #     `lib/nushell/<name>/mod.nu`
               # packages: optinal list of packages used by this package. Binary packages (those
               #     with files in `bin/` directory) and other freeze packages are supported.
-              #     other will be ignored 
+              #     other will be ignored
               buildPackage = lib.buildNuPackage pkgs patcher.package;
 
               # Create a nushell wrapper with no user configuration
               # and specified packages in $env.NU_LIB_DIRS
               withPackages = lib.withPackages pkgs;
 
-              # Turn nushell script into a binary. Wraps given script, located in package, 
+              # Turn nushell script into a binary. Wraps given script, located in package,
               # as "bin/<binName>"
               #
               # package: a package containing "lib/nushell" (made by buildNuPackage)
@@ -93,21 +98,23 @@
           overlays = [
             self.overlays.freeze
             self.overlays.packages
-            nuenv.overlays.default
+            (import rust-overlay)
           ];
         };
-        craneLib = crane.mkLib pkgs;
+        makeRustToolchain =
+          p:
+          p.rust-bin.stable.latest.default.override {
+            extensions = [
+              "rust-src"
+              "rust-analyzer"
+            ];
+          };
+        craneLib = (crane.mkLib pkgs).overrideToolchain makeRustToolchain;
         patcher = import lib/patcher { inherit craneLib; };
       in
       {
         checks = import ./checks { inherit pkgs; } // patcher.checks;
-        devShells.default = craneLib.devShell {
-          checks = patcher.checks;
-
-          packages = with pkgs; [
-            rust-analyzer
-          ];
-        };
+        devShells.default = craneLib.devShell { };
       }
     );
 }
