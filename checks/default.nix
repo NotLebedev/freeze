@@ -10,6 +10,7 @@ let
     "subcommands"
     "commentsAndString"
     "nu_scripts"
+    "multipleDirs"
   ];
 in
 builtins.listToAttrs (
