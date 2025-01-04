@@ -2,10 +2,6 @@
   description = "";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nuenv = {
-      url = "github:NotLebedev/nuenv";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     flake-utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
     nu_scripts = {
@@ -18,7 +14,6 @@
     {
       self,
       nixpkgs,
-      nuenv,
       flake-utils,
       crane,
       ...
@@ -30,7 +25,8 @@
         freeze =
           final: prev:
           let
-            pkgs = prev.extend nuenv.overlays.default;
+            pkgs = import nixpkgs { system = prev.system; };
+            # Building patcher with fixed nixpkgs from this flake
             craneLib = crane.mkLib pkgs;
             patcher = import ./lib/patcher { inherit craneLib; };
             lib = import ./lib { };
@@ -93,7 +89,6 @@
           overlays = [
             self.overlays.freeze
             self.overlays.packages
-            nuenv.overlays.default
           ];
         };
         craneLib = crane.mkLib pkgs;
