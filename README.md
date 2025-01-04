@@ -149,15 +149,6 @@ gm --help
 
 Here are some thoughts that I had while creating this project.
 
-### Why use nuenv to build derivations?
-
-_Short_: It's cool and its nushell
-
-_Long_: I really don't like sh derivative shells. Before I discovered nushell I did not touch shell
-much and was really annoyed when I needed to. When I discovered nushell I fell in love with it
-and started using shell a lot. With some time I understood and became more familiar with sh/bash
-too. But ultimately I'm not torturing myself with bash on free time, I much rather toy with nushell.
-
 ### Whats the need for `__set_env`/`__unset_env`/patching?
 
 _Short_: To unclutter path and behave in a more nix way.
