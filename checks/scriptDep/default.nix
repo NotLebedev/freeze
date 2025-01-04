@@ -23,20 +23,14 @@ let
     ];
   };
 in
-pkgs.nuenv.mkDerivation {
-  name = "checkScriptDep";
-  src = ./.;
+''
+  #!/usr/bin/env nu
+  use ${package}/lib/nushell/package
+  use std assert
 
-  build = ''
-    #!/usr/bin/env nu
-    use ${package}/lib/nushell/package
-    use std assert
-    
-    package
+  package
 
-    # Check that fiels are not modified without binary dependendcies
-    assert equal (open ${./package.nu}) (open ${package}/lib/nushell/package/mod.nu)
-    mkdir $env.out
-  '';
-}
-
+  # Check that fiels are not modified without binary dependendcies
+  assert equal (open ${./package.nu}) (open ${package}/lib/nushell/package/mod.nu)
+  mkdir $env.out
+''

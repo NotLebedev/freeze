@@ -9,21 +9,13 @@ let
     ];
   };
 in
-pkgs.nuenv.mkDerivation {
-  name = "subcommands";
-  src = ./.;
+''
+  use ${package}/lib/nushell/package *
 
-  build = ''
-    #!/usr/bin/env nu
-    use ${package}/lib/nushell/package *
-    use std assert
+  sub
+  sub command1
+  sub command2
+  sub command3
 
-    sub
-    sub command1
-    sub command2
-    sub command3
-
-    mkdir $env.out
-  '';
-}
-
+  mkdir $env.out
+''

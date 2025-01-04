@@ -12,16 +12,11 @@ let
     packages = [ dep ];
   };
 in
-pkgs.nuenv.mkDerivation {
-  name = "multipleDirs";
-  src = ./.;
+''
+  #!/usr/bin/env nu
+  use ${package}/lib/nushell/package *
 
-  build = ''
-    #!/usr/bin/env nu
-    use ${package}/lib/nushell/package *
+  test
 
-    test
-
-    mkdir $env.out
-  '';
-}
+  mkdir $env.out
+''

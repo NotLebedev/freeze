@@ -9,23 +9,17 @@ let
     ];
   };
 in
-pkgs.nuenv.mkDerivation {
-  name = "commentsAndStrings";
-  src = ./.;
+''
+  #!/usr/bin/env nu
+  use std assert
+  use ${package}/lib/nushell/package *
 
-  build = ''
-    #!/usr/bin/env nu
-    use std assert
-    use ${package}/lib/nushell/package *
+  test0
+  test1
+  test2
+  test3
+  test4
+  test5
 
-    test0
-    test1
-    test2
-    test3
-    test4
-    test5
-
-    mkdir $env.out
-  '';
-}
-
+  mkdir $env.out
+''

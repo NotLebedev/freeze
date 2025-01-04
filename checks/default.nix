@@ -12,10 +12,27 @@ let
     "nu_scripts"
     "multipleDirs"
   ];
+
+  nu = "${pkgs.nushell}/bin/nu";
+
+  mkCheck =
+    { name, build }:
+    pkgs.stdenv.mkDerivation {
+      inherit name;
+
+      phases = [ "buildPhase" ];
+
+      CMD = build;
+
+      buildPhase = ''${nu} -c "$CMD"'';
+    };
 in
 builtins.listToAttrs (
   builtins.map (check: {
     name = check;
-    value = import ./${check} { inherit pkgs; };
+    value = mkCheck {
+      name = check;
+      build = import ./${check} { inherit pkgs; };
+    };
   }) checks
 )
