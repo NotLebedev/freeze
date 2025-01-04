@@ -3,7 +3,12 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     crane.url = "github:ipetkov/crane";
+
     nu_scripts = {
       url = "github:nushell/nu_scripts";
       flake = false;
@@ -16,6 +21,7 @@
       nixpkgs,
       flake-utils,
       crane,
+      rust-overlay,
       ...
     }@inputs:
     {
@@ -25,8 +31,11 @@
         freeze =
           final: prev:
           let
-            pkgs = import nixpkgs { system = prev.system; };
             # Building patcher with fixed nixpkgs from this flake
+            pkgs = import nixpkgs {
+              system = prev.system;
+              overlays = [ (import rust-overlay) ];
+            };
             craneLib = crane.mkLib pkgs;
             patcher = import ./lib/patcher { inherit craneLib; };
             lib = import ./lib { };
@@ -89,22 +98,23 @@
           overlays = [
             self.overlays.freeze
             self.overlays.packages
+            (import rust-overlay)
           ];
         };
-        craneLib = crane.mkLib pkgs;
+        makeRustToolchain =
+          p:
+          p.rust-bin.stable.latest.default.override {
+            extensions = [
+              "rust-src"
+              "rust-analyzer"
+            ];
+          };
+        craneLib = (crane.mkLib pkgs).overrideToolchain makeRustToolchain;
         patcher = import lib/patcher { inherit craneLib; };
       in
       {
         checks = import ./checks { inherit pkgs; } // patcher.checks;
-        devShells.default = craneLib.devShell {
-          checks = patcher.checks;
-
-          RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-
-          packages = with pkgs; [
-            rust-analyzer
-          ];
-        };
+        devShells.default = craneLib.devShell { };
       }
     );
 }
