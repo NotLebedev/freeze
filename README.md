@@ -14,6 +14,12 @@ Install it by adding overlay to your pkgs like this:
 
 ```nix
 inputs.freeze.url = "github:NotLebedev/freeze"; # Add to flake input
+# or
+inputs.freeze = {
+  url = "github:NotLebedev/freeze";
+  inputs.nixpkgs.follows = "nixpkgs"; # Add this to override nushell version used to package scripts
+  inputs.nu_scripts.follows = "nu_scripts"; # Add this to update nu_scripts version
+};
 
 ...
 
