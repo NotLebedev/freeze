@@ -1,11 +1,11 @@
 [package]
 name = "freeze-patcher"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 [dependencies]
-nu-cmd-lang = "0.100.0"
-nu-parser = "0.100.0"
-nu-protocol = "0.100.0"
-nu-utils = "0.100.0"
+nu-cmd-lang = "0.106.1"
+nu-parser = "0.106.1"
+nu-protocol = "0.106.1"
+nu-utils = "0.106.1"
 anyhow = "1.0.95"
