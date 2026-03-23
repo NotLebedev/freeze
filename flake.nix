@@ -2,7 +2,6 @@
   description = "";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -19,7 +18,6 @@
     {
       self,
       nixpkgs,
-      flake-utils,
       crane,
       rust-overlay,
       ...
@@ -33,7 +31,8 @@
           let
             # Building patcher with fixed nixpkgs from this flake
             pkgs = import nixpkgs {
-              system = prev.system;
+              inherit (final) config;
+              inherit (final.stdenv.hostPlatform) system;
               overlays = [ (import rust-overlay) ];
             };
             craneLib = crane.mkLib pkgs;
@@ -70,7 +69,8 @@
               #     search for mod.nu for directories like `use` does
               # binName: name of the resulting binary in "bin/" of derivation
               wrapScript = lib.wrapScript pkgs;
-            } // (prev.nushell-freeze or { });
+            }
+            // (prev.nushell-freeze or { });
           };
 
         packages =
@@ -84,15 +84,16 @@
                 pkgs = pkgs;
                 inputs = inputs;
               };
-            } // (prev.nushell-freeze or { });
+            }
+            // (prev.nushell-freeze or { });
           };
       };
 
       homeManagerModule = (import ./lib { }).homeManagerModule;
     }
-    // flake-utils.lib.eachDefaultSystem (
-      system:
+    // (
       let
+        system = "x86_64-linux";
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
@@ -113,8 +114,8 @@
         patcher = import lib/patcher { inherit craneLib; };
       in
       {
-        checks = import ./checks { inherit pkgs; } // patcher.checks;
-        devShells.default = craneLib.devShell { };
+        checks.${system} = import ./checks { inherit pkgs; } // patcher.checks;
+        devShells.${system}.default = craneLib.devShell { };
       }
     );
 }
