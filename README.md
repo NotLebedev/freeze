@@ -24,7 +24,6 @@ inputs.freeze = {
 ...
 
 pkgs = import nixpkgs {
-  inherit system;
   overlays = [
     freeze.overlays.default # Add freeze to overlays when importing nixpkgs
   ];
