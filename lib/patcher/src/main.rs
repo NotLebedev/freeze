@@ -380,7 +380,7 @@ impl<'a: 'b, 'b> Search<'a> {
                     const ENV_FLAG: &str = "env";
 
                     let is_env = call.get_named_arg(ENV_FLAG).is_some();
-                    let body = call.positional_nth(BODY_INDEX)?.span;
+                    let body = call.positional_iter().nth(BODY_INDEX)?.span;
                     Some(ExportDef { body, is_env })
                 } else {
                     None
