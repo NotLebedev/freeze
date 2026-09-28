@@ -31,6 +31,6 @@ in
   package
 
   # Check that fiels are not modified without binary dependendcies
-  assert equal (open ${./package.nu}) (open ${package}/lib/nushell/package/mod.nu)
+  assert ((open ${./package.nu}) == (open ${package}/lib/nushell/package/mod.nu))
   mkdir $env.out
 ''

@@ -9,13 +9,13 @@ in
   use std assert
 
   use ${all}/lib/nushell/nu_scripts/sourced/temp.nu c-to-k
-  assert equal (c-to-k 100 -r 0) '100 °C is 373.0 °K'
+  assert ((c-to-k 100 -r 0) == '100 °C is 373.0 °K')
 
   use ${all}/lib/nushell/nu_scripts/sourced/temp.nu c-to-k
-  assert equal (c-to-k 100 -r 0) '100 °C is 373.0 °K'
+  assert ((c-to-k 100 -r 0) == '100 °C is 373.0 °K')
 
   use ${just-temp}/lib/nushell/temp k-to-c
-  assert equal (k-to-c 373 -r 0) '373 °K is 100.0 °C'
+  assert ((k-to-c 373 -r 0) == '373 °K is 100.0 °C')
 
   mkdir $env.out
 ''

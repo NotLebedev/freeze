@@ -1,7 +1,7 @@
 use std assert # Assert is part of nushell
 
 def check-jq-installed []: nothing -> nothing {
-  assert equal (which jq | length) 1
+  assert ((which jq | length) == 1)
 }
 
 export def --env new-var []: nothing -> nothing {
