@@ -1,14 +1,14 @@
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use nu_parser::parse;
 use nu_protocol::{
+    Span, Value,
     ast::{Block, Expr, Pipeline, PipelineElement},
     engine::{EngineState, StateWorkingSet},
-    Span, Value,
 };
 use nu_utils::escape_quote_string;
 use std::{
     env,
-    fs::{self, create_dir, File},
+    fs::{self, File, create_dir},
     io::{Read, Write},
     os::unix,
     path::{Path, PathBuf},

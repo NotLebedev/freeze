@@ -18,28 +18,28 @@ in
     let old_path = $env.PATH
     new-var
     # Check that new var is set
-    assert equal $env.QWE rty
+    assert ($env.QWE == rty)
     # Check that PATH was not changed after running
-    assert equal $env.PATH $old_path
+    assert ($env.PATH == $old_path)
   }
 
   do {
     let expected_path = ($env.PATH | append /qwe/qwe)
     add-to-path
     # Check that one entry was added to path
-    assert equal $env.PATH $expected_path
+    assert ($env.PATH == $expected_path)
   }
 
   do {
     clear-path
-    assert equal $env.PATH [ ]
+    assert ($env.PATH == [ ])
   }
 
   do {
     let old_path = $env.PATH
     one-calls-another
     # Check that PATH was not changed after running
-    assert equal $env.PATH $old_path
+    assert ($env.PATH == $old_path)
   }
 
   mkdir $env.out

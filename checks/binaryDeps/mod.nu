@@ -15,5 +15,5 @@ export def main []: nothing -> nothing {
 
   let updated_reference = $sample | update a.b.4 5
 
-  assert equal $updated_with_jq $updated_reference
+  assert ($updated_with_jq == $updated_reference)
 }

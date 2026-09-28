@@ -10,6 +10,6 @@ export def pipe-complex []: record<a: string b: int> -> record<c: string d: int>
 
 export def pipe-let []: string -> string {
   let inp = $in
-  assert equal (which jq | length) 1
+  assert ((which jq | length) == 1)
   $in
 }

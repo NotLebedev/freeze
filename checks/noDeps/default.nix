@@ -39,7 +39,7 @@ in
   }
 
   # Check that fiels are not modified without binary dependendcies
-  assert equal (open ${./script.nu}) (open ${buildDir}/lib/nushell/noDeps/script.nu)
-  assert equal (open ${./script.nu}) (open ${buildFile}/lib/nushell/noDeps/mod.nu)
+  assert ((open ${./script.nu}) == (open ${buildDir}/lib/nushell/noDeps/script.nu))
+  assert ((open ${./script.nu}) == (open ${buildFile}/lib/nushell/noDeps/mod.nu))
   mkdir $env.out
 ''
